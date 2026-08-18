@@ -1,0 +1,23 @@
+# 敏感配置与密钥——绝不上传
+.env
+.env.local
+
+# 数据（含用户隐私，绝不上传）
+data/
+!data/.gitkeep
+
+# 运行产物
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 前端依赖与构建
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+
+# 日志与临时文件
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,3 @@
+# pnpm 11 构建脚本审批（esbuild 是 Vite 必需的原生依赖）
+allowBuilds:
+  esbuild: true
