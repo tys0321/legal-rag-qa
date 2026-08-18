@@ -21,6 +21,21 @@ def _register(client: TestClient, prefix: str = "adm") -> str:
     return name, resp.json()["token"]
 
 
+def _create_admin(client: TestClient) -> str:
+    """动态创建管理员并返回 token（密码随机，不依赖预设账号）。"""
+    from app.repositories import database as db
+
+    name = f"adm_{uuid.uuid4().hex[:8]}"
+    pwd = f"a{uuid.uuid4().hex[:8]}B1"  # 满足字母+数字规则
+    resp = client.post("/api/auth/register", json={"username": name, "password": pwd})
+    assert resp.status_code == 200, resp.text
+    user_id = resp.json()["user_id"]
+    db.execute("UPDATE users SET role = 'admin' WHERE id = ?", (user_id,))
+    resp = client.post("/api/auth/login", json={"username": name, "password": pwd})
+    assert resp.status_code == 200, resp.text
+    return resp.json()["token"]
+
+
 def test_admin_api_requires_admin(client: TestClient) -> None:
     # 未登录
     assert client.get("/api/admin/users").status_code == 401
@@ -32,10 +47,8 @@ def test_admin_api_requires_admin(client: TestClient) -> None:
 
 
 def test_admin_api_works_for_admin(client: TestClient) -> None:
-    # 登录内置 admin
-    resp = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
-    assert resp.status_code == 200, resp.text
-    token = resp.json()["token"]
+    # 动态创建管理员登录
+    token = _create_admin(client)
 
     r1 = client.get("/api/admin/users", headers={"Authorization": f"Bearer {token}"})
     assert r1.status_code == 200
@@ -60,9 +73,7 @@ def test_backup_api_requires_admin(client: TestClient) -> None:
 
 def test_backup_create_list_restore_delete(client: TestClient) -> None:
     """快照 API 全流程：创建 → 列表 → 恢复 → 删除。"""
-    resp = client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
-    assert resp.status_code == 200
-    token = resp.json()["token"]
+    token = _create_admin(client)
     h = {"Authorization": f"Bearer {token}"}
 
     # 创建

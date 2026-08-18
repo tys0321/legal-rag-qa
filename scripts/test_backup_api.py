@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-"""通过 API 验证快照恢复：创建快照 → 删除用户 → 恢复 → 用户还原。"""
+"""通过 API 验证快照恢复：创建快照 → 删除用户 → 恢复 → 用户还原。
+
+用法：ADMIN_PASSWORD=<admin密码> python test_backup_api.py
+"""
+import os
 import sys
-import urllib.parse
 from pathlib import Path
 
 import requests
@@ -11,8 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 BASE = "http://127.0.0.1:8000"
 sess = requests.Session()
 
-# 登录 admin
-r = sess.post(f"{BASE}/api/auth/login", json={"username": "admin", "password": "admin123"})
+# 登录 admin（密码从环境变量读取，不硬编码）
+admin_password = os.getenv("ADMIN_PASSWORD", "")
+if not admin_password:
+    print("请先设置环境变量 ADMIN_PASSWORD=<admin密码>")
+    sys.exit(1)
+r = sess.post(f"{BASE}/api/auth/login", json={"username": "admin", "password": admin_password})
+assert r.status_code == 200, f"admin 登录失败: {r.text}"
 token = r.json()["token"]
 sess.headers["Authorization"] = f"Bearer {token}"
 
