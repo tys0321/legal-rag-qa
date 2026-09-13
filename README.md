@@ -119,7 +119,20 @@ legal-rag-qa/
 
 ## 截图
 
-> 待补充：主界面、问答效果、管理后台截图
+### 主界面
+![主界面](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/01-home.png)
+
+### 问答效果（回答带法条引用溯源）
+![问答效果](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/02-chat.png)
+
+### 管理后台（数据看板 & 用户管理）
+![管理后台](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/03-admin.png)
+
+### 版本快照 & 操作日志
+![版本管理](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/04-version.png)
+
+### 高保真原型设计稿
+![高保真原型](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/05-prototype.png)
 
 ## License
 
