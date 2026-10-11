@@ -9,3 +9,6 @@ fastembed==0.7.0
 rapidocr_onnxruntime==1.2.3
 python-multipart==0.0.32
 pytest==9.1.1
+PyMySQL==1.1.1
+cryptography==44.0.0
+httpx==0.28.1

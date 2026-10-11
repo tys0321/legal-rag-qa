@@ -1,0 +1,88 @@
+# 法律 RAG 问答 · 一键交付环境
+# 用法（在仓库根目录）：
+#   docker compose -f deploy/docker-compose.yml up -d mysql qdrant
+#   docker compose -f deploy/docker-compose.yml up -d --build
+
+services:
+  mysql:
+    # 国内网络可改为 docker.m.daocloud.io/library/mysql:8.0
+    image: mysql:8.0
+    container_name: legal-rag-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: legal_rag
+      MYSQL_USER: legal
+      MYSQL_PASSWORD: legal_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ulegal", "-plegal_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  qdrant:
+    # 国内网络可改为 docker.m.daocloud.io/qdrant/qdrant:v1.13.2
+    image: qdrant/qdrant:v1.13.2
+    container_name: legal-rag-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    container_name: legal-rag-api
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    environment:
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_CHAT_MODEL: ${DEEPSEEK_CHAT_MODEL:-deepseek-chat}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: legal
+      MYSQL_PASSWORD: legal_pass
+      MYSQL_DATABASE: legal_rag
+      VECTOR_BACKEND: qdrant
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: legal_chunks
+      VECTOR_STORE_DIR: /app/data/vectorstore
+      KB_SOURCE_DIR: /app/data/kb
+      MAX_HISTORY_ROUNDS: 12
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    container_name: legal-rag-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  mysql_data:
+  qdrant_data:

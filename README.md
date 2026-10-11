@@ -60,11 +60,14 @@
 ```
 
 ### 技术栈
-- **前端**：Python + Streamlit（聊天界面 + 管理后台）
-- **大模型**：DeepSeek Chat API（流式输出）
-- **RAG 引擎**：Dify（文档切片 + 向量检索 + Prompt 编排）
-- **数据持久化**：JSON 文件存储（会话记录、用户数据、版本快照）
-- **测试**：pytest
+- **前端**：React 18 + TypeScript + Vite（Web）
+- **后端**：Python + FastAPI
+- **大模型（LLM）**：DeepSeek Chat API
+- **RAG**：自研检索增强（分块 / 向量检索 / 引用溯源；后续混合检索+重排）
+- **业务库**：MySQL 8（任务书硬性要求）
+- **向量检索**：本地向量库（开发）/ Qdrant（Docker Compose）
+- **部署**：Docker Compose（`deploy/docker-compose.yml`）
+- **测试**：pytest + `scripts/smoke_m0.py`
 
 ## 快速开始
 

@@ -24,12 +24,16 @@ setup_logging(log_dir=PROJECT_ROOT / "data" / "logs")
 logger = logging.getLogger("app")
 
 settings.ensure_dirs()
-db.init_db()
+try:
+    db.init_db()
+except Exception as exc:  # noqa: BLE001
+    # 允许进程启动后由 /api/health 暴露失败原因（便于 Compose 健康检查）
+    logger.error("MySQL 初始化失败: %s", exc)
 
 app = FastAPI(
     title="法律知识问答助手 API",
-    description="基于 RAG 的法律知识问答系统：快慢分流、引用溯源、多轮对话。",
-    version="1.0.0",
+    description="基于 RAG 的法律知识问答系统：快慢分流、引用溯源、多轮对话。业务库：MySQL。",
+    version="1.1.0",
 )
 
 app.add_middleware(
@@ -44,6 +48,21 @@ app.include_router(chat_router)
 app.include_router(documents_router)
 app.include_router(sessions_router)
 app.include_router(admin_router)
+
+
+@app.get("/api/health")
+def health() -> dict:
+    """基建烟测：MySQL 连通性与向量后端配置。"""
+    mysql_ok = db.ping()
+    return {
+        "status": "ok" if mysql_ok else "degraded",
+        "mysql": mysql_ok,
+        "mysql_host": settings.mysql_host,
+        "mysql_database": settings.mysql_database,
+        "vector_backend": settings.vector_backend,
+        "qdrant_url": settings.qdrant_url,
+        "max_history_rounds": settings.max_history_rounds,
+    }
 
 
 @app.exception_handler(AppError)
@@ -62,12 +81,23 @@ FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
 
 
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(FRONTEND_DIST / "index.html")
+def index():
+    index_path = FRONTEND_DIST / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return JSONResponse(
+        {
+            "name": "legal-rag-qa",
+            "message": "前端尚未构建。开发请访问 Vite 或先执行 frontend build。",
+            "docs": "/docs",
+            "health": "/api/health",
+        }
+    )
 
 
-if FRONTEND_DIST.exists():
-    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
+_assets = FRONTEND_DIST / "assets"
+if _assets.exists():
+    app.mount("/assets", StaticFiles(directory=_assets), name="assets")
 
 
 if __name__ == "__main__":

@@ -73,7 +73,7 @@ def create_user(username: str, password: str, role: str = "user") -> dict | None
             "INSERT INTO users (username, password_hash, salt, role) VALUES (?, ?, ?, ?)",
             (name, pwd_hash, salt, role),
         )
-    except db.sqlite3.IntegrityError:
+    except db.IntegrityError:
         return None
     user = db.query_one("SELECT * FROM users WHERE username = ?", (name,))
     return dict(user) if user else None

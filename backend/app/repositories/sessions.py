@@ -1,4 +1,4 @@
-"""会话仓储：多轮对话记忆（SQLite 持久化，按用户隔离）。"""
+"""会话仓储：多轮对话记忆（MySQL 持久化，按用户隔离）。"""
 from __future__ import annotations
 
 import uuid
@@ -66,7 +66,7 @@ class SessionStore:
             "INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)",
             (sid, role, content),
         )
-        db.execute("UPDATE sessions SET updated_at = datetime('now','localtime') WHERE id = ?", (sid,))
+        db.execute("UPDATE sessions SET updated_at = NOW() WHERE id = ?", (sid,))
 
     def rename(self, sid: str, title: str, user_id: int) -> bool:
         row = self.get(sid, user_id)
