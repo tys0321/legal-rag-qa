@@ -558,6 +558,15 @@ body {
 .badge.slow {
   background: var(--slow);
 }
+.badge.conf-high {
+  background: #2f6f4e;
+}
+.badge.conf-medium {
+  background: #8a6d3b;
+}
+.badge.conf-low {
+  background: #a94442;
+}
 .src-btn {
   font-size: 12px;
   color: var(--primary);

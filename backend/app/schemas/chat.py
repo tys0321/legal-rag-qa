@@ -40,6 +40,8 @@ class ChatResponse(BaseModel):
     disclaimer: str
     routed_reason: str
     related_cases: list[CaseOut] = []
+    confidence: str = "medium"  # high | medium | low
+    critic_issues: list[str] = []
 
 
 class ClearSessionRequest(BaseModel):

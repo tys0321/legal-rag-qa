@@ -129,6 +129,9 @@ class VectorStore:
                     "page": chunk.page,
                     "text": chunk.text,
                     "chunk_index": chunk.chunk_index,
+                    "bian": getattr(chunk, "bian", "") or "",
+                    "chapter": getattr(chunk, "chapter", "") or "",
+                    "section": getattr(chunk, "section", "") or "",
                 }
                 if doc_meta:
                     meta.update(doc_meta)
@@ -153,63 +156,48 @@ class VectorStore:
         return removed
 
     # ---------- 检索 ----------
-    def search(self, query: str, top_k: int = 6, min_score: float = 0.0) -> list[dict]:
-        """检索。法律场景增强：
-        1) 查询含「第X条/章」时先做条款号精确匹配（若提到法律名则限定该文档）；
-        2) 向量语义检索取足量候选（不被条款命中挤占配额）；
-        3) 条款匹配优先，向量结果补足，去重后截断到 top_k。"""
+    def search_dense(self, query: str, top_k: int = 20, min_score: float = 0.0) -> list[dict]:
+        """纯稠密向量检索（供混合检索通道使用）。"""
         self.load()
         if not self._vectors:
             return []
-
-        # 1) 条款号结构化匹配（感知查询中的法律名）
-        article_hits = self._search_by_article(query, top_k)
-
-        # 2) 向量语义检索：候选数 = top_k + 条款命中数，保证配额
-        vec_candidates = top_k + len(article_hits)
         q = np.asarray(embed_query(query), dtype=np.float32)
         q = q / (np.linalg.norm(q) + 1e-9)
         mat = np.array(self._vectors, dtype=np.float32)
         norms = np.linalg.norm(mat, axis=1, keepdims=True) + 1e-9
         scores = (mat @ q).reshape(-1) / norms.reshape(-1)
-        order = np.argsort(-scores)[:vec_candidates]
-
-        article_ids = {r["id"] for r in article_hits}
+        order = np.argsort(-scores)[:top_k]
         results: list[dict] = []
-        seen: set[str] = set()
-        # 条款匹配结果优先（保留匹配方式标注）
-        for r in article_hits:
-            if r["id"] not in seen:
-                seen.add(r["id"])
-                results.append(r)
-        # 再补向量结果
         for i in order:
             score = float(scores[i])
             if score < min_score:
                 continue
-            cid = self._ids[i]
-            if cid in seen:
-                continue
-            seen.add(cid)
             m = self._metas[i]
             results.append(
                 {
-                    "id": cid,
+                    "id": self._ids[i],
                     "doc_id": m["doc_id"],
                     "title": m["title"],
                     "category": m["category"],
-                    "article": m["article"],
-                    "page": m["page"],
-                    "text": m["text"],
+                    "article": m.get("article", ""),
+                    "page": m.get("page", 0),
+                    "text": m.get("text", ""),
                     "score": round(score, 4),
-                    "match": "article" if cid in article_ids else "vector",
+                    "match": "vector",
                     "effective_status": m.get("effective_status", ""),
                     "effective_detail": m.get("effective_detail", ""),
+                    "bian": m.get("bian", ""),
+                    "chapter": m.get("chapter", ""),
+                    "section": m.get("section", ""),
                 }
             )
-        # 按效力状态排序：现行有效/最新版本优先（条款匹配的结果内部也按此排序）
-        results = sorted(results, key=_status_sort_key)
-        return results[:top_k]
+        return results
+
+    def search(self, query: str, top_k: int = 6, min_score: float = 0.0) -> list[dict]:
+        """默认走混合检索（BM25 + 稠密 + 条款精确 + 重排）。"""
+        from app.services.hybrid_retrieve import hybrid_search
+
+        return hybrid_search(query, top_k=top_k, min_score=min_score)
 
     # ---------- 案例推荐检索 ----------
     def search_cases(self, query: str, top_k: int = 4) -> list[dict]:

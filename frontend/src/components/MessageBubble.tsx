@@ -123,6 +123,15 @@ export default function MessageBubble({ message }: Props) {
                 <span className={`badge ${message.mode}`}>
                   {message.mode === "fast" ? "⚡ 常识回答" : "📚 知识库回答"}
                 </span>
+                {message.confidence && (
+                  <span className={`badge conf-${message.confidence}`}>
+                    {message.confidence === "high"
+                      ? "置信度：高"
+                      : message.confidence === "low"
+                        ? "置信度：低"
+                        : "置信度：中"}
+                  </span>
+                )}
                 {sources.length > 0 && (
                   <button className="src-btn" onClick={() => setExpanded((v) => !v)}>
                     {expanded ? "收起引用来源" : `查看 ${sources.length} 个引用来源`}

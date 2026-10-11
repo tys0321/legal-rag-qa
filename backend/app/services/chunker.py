@@ -11,8 +11,9 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ARTICLE_RE = re.compile(r"^\s*(第[一二三四五六七八九十百千0-9]+[条章])\s*(.*)$")
+ARTICLE_RE = re.compile(r"^\s*(第[一二三四五六七八九十百千0-9]+[条章节编])\s*(.*)$")
 LINE_BREAK_RE = re.compile(r"[ \t\u3000]+")
+STRUCT_RE = re.compile(r"^\s*(第[一二三四五六七八九十百千0-9]+[编章节条])\s*")
 
 
 @dataclass
@@ -26,6 +27,9 @@ class Chunk:
     article: str = ""        # 条款号，如「第三十九条」
     page: int = 0            # 页码（PDF）
     chunk_index: int = 0     # 块序号
+    bian: str = ""           # 编
+    chapter: str = ""        # 章
+    section: str = ""        # 节
     meta: dict = field(default_factory=dict)
 
 
@@ -144,79 +148,89 @@ def parse_document(path: Path, kb_root: Path) -> ParsedDoc:
     raise ValueError(f"不支持的格式: {suffix}")
 
 
-def _split_articles(paras: list[str], pages: list[int]) -> list[tuple[str, str, int]]:
-    """将段落按「第X条」边界分组，返回 (文本, 条款号, 页码)。"""
-    groups: list[tuple[list[str], str, int]] = []
+def _split_articles(
+    paras: list[str], pages: list[int]
+) -> list[tuple[str, str, int, str, str, str]]:
+    """按编/章/节/条切分，返回 (文本, 条, 页码, 编, 章, 节)。"""
+    groups: list[tuple[list[str], str, int, str, str, str]] = []
     cur: list[str] = []
     cur_article = ""
     cur_page = 0
+    cur_bian = ""
+    cur_chapter = ""
+    cur_section = ""
 
     def flush() -> None:
         nonlocal cur
         if cur:
-            groups.append(("".join(cur), cur_article, cur_page))
+            groups.append(("".join(cur), cur_article, cur_page, cur_bian, cur_chapter, cur_section))
             cur = []
 
     for para, page in zip(paras, pages):
-        m = ARTICLE_RE.match(para)
-        if m and (len(para) <= 60 or m.group(1) in ("第一章", "第二章", "第三章", "第四章", "第五章", "第六章", "第七章", "第八章", "第九章", "第十章", "第十一章", "第十二章", "第十三章", "第十四章", "第十五章", "第十六章")):
-            flush()
-            cur_article = m.group(1)
-            cur_page = page
-            cur.append(para)
-        elif m and cur_article:
-            # 连续多条「第X条」开头，视为新条款
-            flush()
-            cur_article = m.group(1)
-            cur_page = page
-            cur.append(para)
-        else:
-            cur.append(para)
+        sm = STRUCT_RE.match(para)
+        if sm:
+            label = sm.group(1)
+            if label.endswith("编"):
+                flush()
+                cur_bian, cur_chapter, cur_section, cur_article = label, "", "", ""
+                cur_page = page
+                cur.append(para)
+                continue
+            if label.endswith("章"):
+                flush()
+                cur_chapter, cur_section, cur_article = label, "", ""
+                cur_page = page
+                cur.append(para)
+                continue
+            if label.endswith("节"):
+                flush()
+                cur_section, cur_article = label, ""
+                cur_page = page
+                cur.append(para)
+                continue
+            if label.endswith("条"):
+                flush()
+                cur_article = label
+                cur_page = page
+                cur.append(para)
+                continue
+        cur.append(para)
     flush()
-    return [(t, a, p) for t, a, p in groups if len(t) >= 5]
+    return [(t, a, p, b, c, s) for t, a, p, b, c, s in groups if len(t) >= 5]
 
 
 def chunk_document(doc: ParsedDoc, chunk_size: int = 600, overlap: int = 80) -> list[Chunk]:
     """把解析后的文档切成检索块。
 
-    优先按条款聚合；条款过长时按 chunk_size 硬切并保留 overlap。
+    优先按「编-章-节-条」聚合；条款过长时按 chunk_size 硬切并保留 overlap。
     """
     chunks: list[Chunk] = []
     idx = 0
-    for text, article, page in _split_articles(doc.paragraphs, doc.page_of_para):
+    for text, article, page, bian, chapter, section in _split_articles(
+        doc.paragraphs, doc.page_of_para
+    ):
         text = text.strip()
         if not text:
             continue
+        common = dict(
+            doc_id=doc.doc_id,
+            title=doc.title,
+            category=doc.category,
+            article=article,
+            page=page,
+            bian=bian,
+            chapter=chapter,
+            section=section,
+        )
         if len(text) <= chunk_size * 1.3:
-            chunks.append(
-                Chunk(
-                    text=text,
-                    doc_id=doc.doc_id,
-                    title=doc.title,
-                    category=doc.category,
-                    article=article,
-                    page=page,
-                    chunk_index=idx,
-                )
-            )
+            chunks.append(Chunk(text=text, chunk_index=idx, **common))
             idx += 1
         else:
-            # 长文本按字符窗口切
             step = chunk_size - overlap
             start = 0
             while start < len(text):
                 seg = text[start : start + chunk_size]
-                chunks.append(
-                    Chunk(
-                        text=seg,
-                        doc_id=doc.doc_id,
-                        title=doc.title,
-                        category=doc.category,
-                        article=article,
-                        page=page,
-                        chunk_index=idx,
-                    )
-                )
+                chunks.append(Chunk(text=seg, chunk_index=idx, **common))
                 idx += 1
                 start += step
                 if len(seg) < chunk_size:

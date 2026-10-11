@@ -53,6 +53,17 @@ class Settings:
         self.chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "80"))
         self.min_score: float = float(os.getenv("MIN_SCORE", "0.30"))
 
+        # 混合检索 / 重排 / 自批评（M1）
+        self.hybrid_candidate_k: int = int(os.getenv("HYBRID_CANDIDATE_K", "20"))
+        self.rrf_weight_article: float = float(os.getenv("RRF_WEIGHT_ARTICLE", "1.2"))
+        self.rrf_weight_dense: float = float(os.getenv("RRF_WEIGHT_DENSE", "1.0"))
+        self.rrf_weight_bm25: float = float(os.getenv("RRF_WEIGHT_BM25", "1.0"))
+        self.rerank_mode: str = os.getenv("RERANK_MODE", "heuristic")  # heuristic|llm|cross_encoder
+        self.rerank_model: str = os.getenv("RERANK_MODEL", "Xenova/ms-marco-MiniLM-L-6-v2")
+        self.critic_enabled: bool = os.getenv("CRITIC_ENABLED", "true").lower() in ("1", "true", "yes")
+        self.confidence_high_threshold: float = float(os.getenv("CONFIDENCE_HIGH_THRESHOLD", "3.0"))
+        self.confidence_mid_threshold: float = float(os.getenv("CONFIDENCE_MID_THRESHOLD", "1.0"))
+
         # 会话
         self.session_dir: Path = PROJECT_ROOT / "data" / "sessions"
         self.max_history_rounds: int = int(os.getenv("MAX_HISTORY_ROUNDS", "12"))

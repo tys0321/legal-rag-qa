@@ -32,6 +32,8 @@ def chat_endpoint(req: ChatRequest, user: dict = Depends(get_current_user)) -> C
         disclaimer=result.disclaimer,
         routed_reason=result.routed_reason,
         related_cases=result.related_cases,
+        confidence=getattr(result, "confidence", "medium"),
+        critic_issues=getattr(result, "critic_issues", []) or [],
     )
 
 

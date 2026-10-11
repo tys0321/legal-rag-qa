@@ -44,6 +44,7 @@ export function useChat(): ChatController {
           mode: resp.mode,
           sources: resp.sources ?? [],
           relatedCases: resp.related_cases ?? [],
+          confidence: resp.confidence,
         };
         setMessages((prev) => [...prev, aiMsg]);
         // 通知侧边栏刷新会话列表

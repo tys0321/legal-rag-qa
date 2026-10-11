@@ -1,4 +1,4 @@
-"""RAG 问答核心：检索 → 生成（强制引用溯源）→ 解析引用。
+"""RAG 问答核心：混合检索 → 重排 → 生成 → 引用验证 → 自批评 → 置信度。
 
 回答规范：
 - 回答必须基于检索材料，引用用 [1] [2] 标注，对应材料编号；
@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 
 from app.core.config import settings
 from app.repositories.vector_store import get_store
+from app.services.citation_verify import verify_answer
+from app.services.critic import confidence_label, self_critic
 from app.services.llm import chat
 from app.services.router import route_query
 
@@ -67,7 +69,7 @@ SYSTEM_PROMPT = """你是「中国法律知识问答助手」，一个严谨、�
 2、「遇到这种情况应该这么做」是固定的开头句，必须一字不差地直接使用，不要改写、不要加任何铺垫（如"先别急""处理路径是清晰的"等）也不能删掉。
 3、步骤数量按实际情况（2~5 步均可），每步单独成行，步骤内容要具体可操作。
 4、「此次事件的违法行为有：」是固定的过渡句；随后列出对方的违法行为，每条先写违法行为名称（加粗），换行后以「   违反的法律是：」开头说明对应的法律依据和条文。
-5、**引用法条必须给出内容**：写「《法律名称》第X条」之后，必须紧跟该条的核心内容（从检索材料中摘录或概括，例如"该条规定：承租人应当按照约定的期限支付租金"），让用户不用点开引用也能直接看懂依据是什么。禁止只写条号不写内容。
+5、**引用法条必须给出内容**：写「《法律名称》第X条」之后，必须紧跟该条的核心内容（从检索材料中摘录或概括），禁止只写条号不写内容。
 6、若事件中不涉及对方违法行为（如只是自己咨询如何操作），可省略第二部分「此次事件的违法行为有」，只保留步骤部分。
 7、若检索材料不足以判断违法行为，如实说明，不要编造法条。
 
@@ -93,11 +95,13 @@ FAST_SYSTEM_PROMPT = """你是「中国法律知识问答助手」，回答用�
 @dataclass
 class RagResult:
     answer: str
-    mode: str = "slow"                       # fast | slow
+    mode: str = "slow"  # fast | slow
     sources: list[dict] = field(default_factory=list)
     disclaimer: str = DISCLAIMER
     routed_reason: str = ""
     related_cases: list[dict] = field(default_factory=list)
+    confidence: str = "medium"  # high | medium | low
+    critic_issues: list[str] = field(default_factory=list)
 
 
 def _build_context(sources: list[dict]) -> str:
@@ -110,7 +114,11 @@ def _build_context(sources: list[dict]) -> str:
             loc += f" 第{s['page']}页"
         status = s.get("effective_status")
         status_tag = f"【效力状态：{status}】" if status else ""
-        parts.append(f"[{i}] 来源：《{loc}》{status_tag}\n{s['text']}")
+        hier = "".join(
+            x for x in [s.get("bian") or "", s.get("chapter") or "", s.get("section") or ""] if x
+        )
+        hier_tag = f"【结构：{hier}】" if hier else ""
+        parts.append(f"[{i}] 来源：《{loc}》{status_tag}{hier_tag}\n{s['text']}")
     return "\n\n".join(parts)
 
 
@@ -126,54 +134,92 @@ def _extract_citations(answer: str) -> list[int]:
     return result
 
 
+def _history_window(history: list[dict] | None) -> list[dict]:
+    n = max(1, settings.max_history_rounds)
+    return (history or [])[-n:]
+
+
 def answer_fast(question: str, history: list[dict] = None) -> RagResult:
     """快路径：LLM 直接回答，不检索知识库。"""
     messages = [{"role": "system", "content": FAST_SYSTEM_PROMPT}]
-    if history:
-        messages.extend(history[-6:])
+    messages.extend(_history_window(history))
     messages.append({"role": "user", "content": question})
     text = chat(messages, temperature=0.5, max_tokens=800)
-    return RagResult(answer=text, mode="fast", sources=[], routed_reason="fast")
+    return RagResult(
+        answer=text,
+        mode="fast",
+        sources=[],
+        routed_reason="fast",
+        confidence="medium",
+    )
 
 
 def answer_slow(question: str, history: list[dict] = None) -> RagResult:
-    """慢路径：检索 → 生成 → 引用解析 → 相似案例推荐。"""
+    """慢路径：混合检索 → 重排 → 生成 → 引用验证 → 自批评。"""
     store = get_store()
     hits = store.search(question, top_k=settings.retrieve_top_k, min_score=settings.min_score)
 
     if not hits:
-        # 无可用检索结果：明确告知，不编造
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT.format(context="（无检索材料）", history="（无）", question=question)},
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT.format(
+                    context="（无检索材料）", history="（无）", question=question
+                ),
+            },
         ]
         text = chat(messages, temperature=0.3, max_tokens=600)
-        return RagResult(answer=text, mode="slow", sources=[], routed_reason="slow:no_hit")
+        return RagResult(
+            answer=text,
+            mode="slow",
+            sources=[],
+            routed_reason="slow:no_hit",
+            confidence="low",
+        )
 
-    # 相似案例推荐（与检索并行，独立于引用材料）
     related_cases = store.search_cases(question, top_k=4)
 
     context = _build_context(hits)
-    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in (history or [])[-6:]) or "（无）"
+    hist = _history_window(history)
+    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in hist) or "（无）"
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT.format(context=context, history=history_text, question=question)},
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT.format(
+                context=context, history=history_text, question=question
+            ),
+        },
     ]
     text = chat(messages, temperature=0.2, max_tokens=1200)
 
-    # 解析引用并映射回检索结果
-    cited = _extract_citations(text)
-    sources = []
-    for n in cited:
-        if 1 <= n <= len(hits):
-            sources.append(hits[n - 1])
-    if not sources and hits:
-        # 模型未按格式引用：至少返回检索结果供人工复核
-        sources = hits[: min(3, len(hits))]
+    # 引用验证
+    verified = verify_answer(text, hits)
+    text = verified.answer
+    sources = verified.sources
+
+    # 自批评
+    critic = self_critic(text, hits, context)
+    if critic.revised_answer:
+        text = critic.revised_answer
+        verified = verify_answer(text, hits)
+        text = verified.answer
+        sources = verified.sources
+
+    conf = confidence_label(
+        hits=hits,
+        verified_ratio=verified.verified_ratio,
+        critic_ok=critic.ok,
+        stripped=verified.stripped_citations + critic.strip_citations,
+    )
+
     return RagResult(
         answer=text,
         mode="slow",
         sources=sources,
-        routed_reason="slow:rag",
+        routed_reason="slow:hybrid+rerank+verify+critic",
         related_cases=related_cases,
+        confidence=conf,
+        critic_issues=critic.issues,
     )
 
 

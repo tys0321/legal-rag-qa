@@ -34,6 +34,8 @@ export interface ChatResponse {
   disclaimer: string;
   routed_reason: string;
   related_cases: RelatedCase[];
+  confidence?: "high" | "medium" | "low";
+  critic_issues?: string[];
 }
 
 /** 对话请求 */
@@ -110,6 +112,7 @@ export interface ChatMessage {
   mode?: "fast" | "slow";
   sources?: Source[];
   relatedCases?: RelatedCase[];
+  confidence?: "high" | "medium" | "low";
   error?: boolean;
 }
 
