@@ -2,7 +2,7 @@
 
 ## 一句话进度
 
-法律 RAG 项目已完成 **M0 / M1 / M2 / M3.1**，**M3.2（轻量律所）已交付待确认**；下一步 **M3.3 案源前端 UI**。
+法律 RAG 项目已完成 **M0 / M1 / M2 / M3.1 / M3.2**，**M3.3（案源/律所前端）已交付待确认**；M3 全闭环完成后可进入 P1（意见书/文书/计算器）或 Buffer。
 
 ## 仓库与提交
 
@@ -13,7 +13,8 @@
   - `66c4da9` feat(m1): hybrid retrieval / rerank / critic
   - `e9335a6` feat(m2): lawyer auth / risk / slots / dual-mode UI
   - `c0e2ecf` feat(m3.1): leads publish / match / claim / simulated contact
-  - （待推）feat(m3.2): lightweight firms + firm-visible leads
+  - `49c4037` feat(m3.2): lightweight firms + firm-visible leads
+  - （待推）feat(m3.3): leads plaza / publish / firm UI
 
 ## 已确认产品决策（摘要）
 

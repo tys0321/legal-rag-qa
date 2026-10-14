@@ -6,6 +6,7 @@ import type { ChatMessage, RelatedCase, Source } from "../api/types";
 interface BubbleProps {
   message: ChatMessage;
   onSwitchLawyer?: () => void;
+  onPublishLead?: (scene?: string) => void;
 }
 
 function escHtml(s: string): string {
@@ -97,7 +98,7 @@ function renderBlock(text: string): string {
   return out.join("");
 }
 
-export default function MessageBubble({ message, onSwitchLawyer }: BubbleProps) {
+export default function MessageBubble({ message, onSwitchLawyer, onPublishLead }: BubbleProps) {
   const [expanded, setExpanded] = useState(false);
 
   if (message.role === "user") {
@@ -152,9 +153,14 @@ export default function MessageBubble({ message, onSwitchLawyer }: BubbleProps) 
               </div>
             )}
             {message.forceLawyerCta && (
-              <button type="button" className="cta-lawyer" onClick={onSwitchLawyer}>
-                转律师 / 进入律师版认证与对接
-              </button>
+              <div className="cta-row">
+                <button type="button" className="cta-lawyer" onClick={() => onPublishLead?.(message.scene)}>
+                  发布案源需求
+                </button>
+                <button type="button" className="btn-ghost" onClick={onSwitchLawyer}>
+                  进入律师版
+                </button>
+              </div>
             )}
             {expanded && sources.length > 0 && <SourceList sources={sources} />}
             {message.relatedCases && message.relatedCases.length > 0 && (

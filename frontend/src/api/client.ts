@@ -9,6 +9,9 @@ import type {
   ChatResponse,
   ChatMessage,
   DocumentItem,
+  FirmInfo,
+  LeadCreateBody,
+  LeadItem,
   LawyerProfile,
   SessionItem,
   SnapshotItem,
@@ -241,6 +244,72 @@ export const api = {
     return request<{ ok: boolean }>("/api/disclaimer/ack", {
       method: "POST",
       body: JSON.stringify({}),
+    });
+  },
+
+  // ---- 案源广场（M3） ----
+  listLeads(params?: {
+    scope?: "auto" | "mine" | "plaza" | "firm";
+    scene?: string;
+    region?: string;
+  }): Promise<{ items: LeadItem[] }> {
+    const q = new URLSearchParams();
+    if (params?.scope) q.set("scope", params.scope);
+    if (params?.scene) q.set("scene", params.scene);
+    if (params?.region) q.set("region", params.region);
+    const qs = q.toString();
+    return request<{ items: LeadItem[] }>(`/api/leads${qs ? `?${qs}` : ""}`);
+  },
+  getLead(leadId: number): Promise<LeadItem> {
+    return request<LeadItem>(`/api/leads/${leadId}`);
+  },
+  createLead(body: LeadCreateBody): Promise<LeadItem> {
+    return request<LeadItem>("/api/leads", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  claimLead(leadId: number): Promise<LeadItem> {
+    return request<LeadItem>(`/api/leads/${leadId}/claim`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+  contactLead(
+    leadId: number,
+    body: { channel: "inbox" | "virtual_number"; message?: string },
+  ): Promise<LeadItem> {
+    return request<LeadItem>(`/api/leads/${leadId}/contact`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  updateLeadStatus(leadId: number, status: string): Promise<LeadItem> {
+    return request<LeadItem>(`/api/leads/${leadId}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  // ---- 轻量律所（M3） ----
+  createFirm(name: string): Promise<FirmInfo> {
+    return request<FirmInfo>("/api/firms", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+  },
+  myFirm(): Promise<FirmInfo> {
+    return request<FirmInfo>("/api/firms/me");
+  },
+  inviteFirmMember(firmId: number, username: string): Promise<{
+    firm_id: number;
+    user_id: number;
+    username: string;
+    role: string;
+  }> {
+    return request(`/api/firms/${firmId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ username }),
     });
   },
 };

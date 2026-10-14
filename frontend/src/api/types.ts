@@ -68,6 +68,65 @@ export interface UserInfo {
   lawyer_access?: string;
   lawyer_status?: string;
   disclaimer_acked?: boolean;
+  firm_id?: number | null;
+  firm_name?: string;
+  firm_role?: string;
+}
+
+/** 案源（M3） */
+export interface LeadEvent {
+  id: number;
+  lead_id: number;
+  actor_id?: number | null;
+  event_type: string;
+  detail: string;
+  created_at: string;
+}
+
+export interface LeadItem {
+  id: number;
+  user_id: number;
+  scene: string;
+  region: string;
+  title: string;
+  summary: string;
+  status: string;
+  claimed_by?: number | null;
+  firm_visible: boolean;
+  contact_masked: string;
+  allow_push: boolean;
+  match_score: number;
+  virtual_number: string;
+  created_at: string;
+  updated_at: string;
+  events?: LeadEvent[];
+}
+
+export interface LeadCreateBody {
+  title: string;
+  summary: string;
+  scene: string;
+  region: string;
+  contact: string;
+  allow_push?: boolean;
+  firm_visible?: boolean;
+  publish?: boolean;
+}
+
+export interface FirmMember {
+  firm_id: number;
+  user_id: number;
+  username: string;
+  role: string;
+  joined_at: string;
+}
+
+export interface FirmInfo {
+  id: number;
+  name: string;
+  owner_user_id: number;
+  created_at: string;
+  members: FirmMember[];
 }
 
 export interface LawyerProfile {

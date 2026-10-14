@@ -1,4 +1,4 @@
-// 主界面：同壳顶栏切换用户版/律师版 + 免责弹窗 + 风险条
+// 主界面：同壳顶栏切换用户版/律师版 + 免责弹窗 + 风险条 + 案源
 
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
@@ -10,6 +10,8 @@ import InputBar from "./InputBar";
 import AdminPanel from "./AdminPanel";
 import DisclaimerModal from "./DisclaimerModal";
 import LawyerPanel from "./LawyerPanel";
+import LeadPublishForm from "./LeadPublishForm";
+import MyLeadsPanel from "./MyLeadsPanel";
 import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
@@ -20,12 +22,15 @@ interface Props {
 }
 
 type AppMode = "user" | "lawyer";
+type UserTab = "chat" | "publish" | "my-leads";
 
 export default function MainView({ userId, username, isAdmin, onLogout }: Props) {
   void userId;
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [view, setView] = useState<"chat" | "admin">("chat");
   const [appMode, setAppMode] = useState<AppMode>("user");
+  const [userTab, setUserTab] = useState<UserTab>("chat");
+  const [publishScene, setPublishScene] = useState("劳动用工");
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [lawyer, setLawyer] = useState<LawyerProfile | null>(null);
@@ -70,17 +75,14 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
   };
 
   const switchMode = (mode: AppMode) => {
-    if (mode === "lawyer") {
-      const access = lawyer?.access || "none";
-      if (access === "none" || access === "rejected") {
-        setAppMode("lawyer");
-        return;
-      }
-      // pending_readonly / approved 均可进入律师壳
-      setAppMode("lawyer");
-      return;
-    }
+    setAppMode(mode);
+    if (mode === "user") setUserTab("chat");
+  };
+
+  const goPublish = (scene?: string) => {
+    if (scene) setPublishScene(scene);
     setAppMode("user");
+    setUserTab("publish");
   };
 
   const ackDisclaimer = async () => {
@@ -128,7 +130,7 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               <p className="subtitle">
                 {view === "admin"
                   ? "系统数据总览 · 用户/律师审核"
-                  : "RAG 检索增强 · 引用可溯源 · 风险分级"}
+                  : "RAG 检索增强 · 引用可溯源 · 案源闭环"}
               </p>
             </div>
           </div>
@@ -175,30 +177,65 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
             <div className="banner">
               ⚠️ AI 生成内容仅供参考，不构成正式法律意见。具体案件请咨询专业法律人士。
             </div>
-            {riskBanner && <div className="risk-banner danger">{riskBanner}</div>}
-            <main className="chat-area">
-              {messages.length === 0 && (
-                <div className="welcome">
-                  <div className="welcome-icon">⚖️</div>
-                  <h2>有什么法律问题想了解？</h2>
-                  <p>
-                    覆盖劳动、租房、婚姻、交通事故、消费、行政诉讼、合同等场景；系统可能追问关键案情要素以提升回答质量。
-                  </p>
-                </div>
-              )}
-              {messages.map((m) => (
-                <MessageBubble key={m.id} message={m} onSwitchLawyer={() => switchMode("lawyer")} />
-              ))}
-              {busy && (
-                <div className="msg ai">
-                  <div className="avatar">⚖️</div>
-                  <div className="bubble typing">正在分析风险并检索知识库…</div>
-                </div>
-              )}
-              <div ref={bottomRef} />
-            </main>
-
-            <InputBar busy={busy} onSend={(t) => void send(t)} />
+            <div className="sub-tabs user-tabs">
+              <button type="button" className={userTab === "chat" ? "active" : ""} onClick={() => setUserTab("chat")}>
+                AI 咨询
+              </button>
+              <button type="button" className={userTab === "publish" ? "active" : ""} onClick={() => setUserTab("publish")}>
+                发案源
+              </button>
+              <button type="button" className={userTab === "my-leads" ? "active" : ""} onClick={() => setUserTab("my-leads")}>
+                我的案源
+              </button>
+            </div>
+            {userTab === "chat" && (
+              <>
+                {riskBanner && <div className="risk-banner danger">{riskBanner}</div>}
+                <main className="chat-area">
+                  {messages.length === 0 && (
+                    <div className="welcome">
+                      <div className="welcome-icon">⚖️</div>
+                      <h2>有什么法律问题想了解？</h2>
+                      <p>
+                        覆盖劳动、租房、婚姻、交通事故、消费、行政诉讼、合同等场景；复杂或高风险问题可发布案源对接律师。
+                      </p>
+                      <button type="button" className="cta-lawyer" onClick={() => goPublish()}>
+                        直接发布案源需求
+                      </button>
+                    </div>
+                  )}
+                  {messages.map((m) => (
+                    <MessageBubble
+                      key={m.id}
+                      message={m}
+                      onSwitchLawyer={() => switchMode("lawyer")}
+                      onPublishLead={(scene) => goPublish(scene)}
+                    />
+                  ))}
+                  {busy && (
+                    <div className="msg ai">
+                      <div className="avatar">⚖️</div>
+                      <div className="bubble typing">正在分析风险并检索知识库…</div>
+                    </div>
+                  )}
+                  <div ref={bottomRef} />
+                </main>
+                <InputBar busy={busy} onSend={(t) => void send(t)} />
+              </>
+            )}
+            {userTab === "publish" && (
+              <main className="chat-area lawyer-area">
+                <LeadPublishForm
+                  defaultScene={publishScene}
+                  onPublished={() => setUserTab("my-leads")}
+                />
+              </main>
+            )}
+            {userTab === "my-leads" && (
+              <main className="chat-area lawyer-area">
+                <MyLeadsPanel />
+              </main>
+            )}
           </>
         )}
       </div>

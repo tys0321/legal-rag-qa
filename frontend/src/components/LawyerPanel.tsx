@@ -1,12 +1,16 @@
-// 律师认证申请 / 待审只读提示
+// 律师认证 + 案源广场 / 所内案源 / 轻量律所
 
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { LawyerProfile } from "../api/types";
+import LeadPlaza from "./LeadPlaza";
+import FirmPanel from "./FirmPanel";
 
 interface Props {
   readonlyMode: boolean;
 }
+
+type LawyerTab = "plaza" | "firm-leads" | "firm";
 
 export default function LawyerPanel({ readonlyMode }: Props) {
   const [profile, setProfile] = useState<LawyerProfile | null>(null);
@@ -15,6 +19,7 @@ export default function LawyerPanel({ readonlyMode }: Props) {
   const [specialties, setSpecialties] = useState("劳动用工,合同纠纷");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [tab, setTab] = useState<LawyerTab>("plaza");
 
   const refresh = () => {
     api.lawyerStatus().then(setProfile).catch(() => undefined);
@@ -47,18 +52,25 @@ export default function LawyerPanel({ readonlyMode }: Props) {
   };
 
   const status = profile?.status || "none";
+  const canBrowse = status === "approved" || status === "pending";
 
   return (
-    <div className="lawyer-panel">
+    <div className="lawyer-panel wide">
       <h2>律师版</h2>
       {readonlyMode && (
-        <div className="risk-banner warn">
-          当前为<strong>待审只读</strong>：可浏览律师版界面，不可认领案源或联系当事人（写操作将在审核通过后开放）。
+        <div className="risk-banner warn inline">
+          当前为<strong>待审只读</strong>：可浏览案源列表，不可认领或联系当事人。
         </div>
       )}
       <p className="muted">
         认证状态：<strong>{status}</strong>
         {profile?.reject_reason ? `（驳回原因：${profile.reject_reason}）` : ""}
+        {status === "approved" && (
+          <>
+            {" "}
+            · 擅长 {(profile?.specialties || []).join("、") || "未填"} · {profile?.region}
+          </>
+        )}
       </p>
 
       {status !== "approved" && (
@@ -82,14 +94,23 @@ export default function LawyerPanel({ readonlyMode }: Props) {
         </div>
       )}
 
-      {status === "approved" && (
-        <div className="lawyer-ok">
-          <p>认证已通过。案源广场与匹配闭环将在下一阶段（M3）开放。</p>
-          <ul>
-            <li>擅长：{(profile?.specialties || []).join("、") || "未填"}</li>
-            <li>地区：{profile?.region}</li>
-          </ul>
-        </div>
+      {canBrowse && (
+        <>
+          <div className="sub-tabs">
+            <button type="button" className={tab === "plaza" ? "active" : ""} onClick={() => setTab("plaza")}>
+              案源广场
+            </button>
+            <button type="button" className={tab === "firm-leads" ? "active" : ""} onClick={() => setTab("firm-leads")}>
+              所内案源
+            </button>
+            <button type="button" className={tab === "firm" ? "active" : ""} onClick={() => setTab("firm")}>
+              轻量律所
+            </button>
+          </div>
+          {tab === "plaza" && <LeadPlaza readonlyMode={readonlyMode || status !== "approved"} scope="plaza" />}
+          {tab === "firm-leads" && <LeadPlaza readonlyMode={readonlyMode || status !== "approved"} scope="firm" />}
+          {tab === "firm" && <FirmPanel readonlyMode={readonlyMode || status !== "approved"} />}
+        </>
       )}
     </div>
   );
