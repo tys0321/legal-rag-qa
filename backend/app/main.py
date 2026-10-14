@@ -14,6 +14,7 @@ from app.api.auth_api import router as auth_router
 from app.api.chat import router as chat_router
 from app.api.documents import router as documents_router
 from app.api.lawyer_api import router as lawyer_router
+from app.api.leads_api import router as leads_router
 from app.api.sessions_api import router as sessions_router
 from app.core.config import settings
 from app.core.errors import AppError
@@ -50,6 +51,7 @@ app.include_router(documents_router)
 app.include_router(sessions_router)
 app.include_router(admin_router)
 app.include_router(lawyer_router)
+app.include_router(leads_router)
 
 
 @app.get("/api/health")

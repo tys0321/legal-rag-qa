@@ -96,6 +96,39 @@ CREATE TABLE IF NOT EXISTS session_slots (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_slots_session FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS leads (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    scene VARCHAR(64) NOT NULL,
+    region VARCHAR(64) NOT NULL DEFAULT '',
+    title VARCHAR(255) NOT NULL,
+    summary MEDIUMTEXT NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'draft',
+    claimed_by INT NULL,
+    firm_visible TINYINT(1) NOT NULL DEFAULT 0,
+    contact_masked VARCHAR(64) NOT NULL DEFAULT '',
+    allow_push TINYINT(1) NOT NULL DEFAULT 1,
+    virtual_number VARCHAR(32) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_leads_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_leads_claimer FOREIGN KEY (claimed_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_leads_status (status),
+    INDEX idx_leads_scene_region (scene, region),
+    INDEX idx_leads_claimed (claimed_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS lead_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lead_id INT NOT NULL,
+    actor_id INT NULL,
+    event_type VARCHAR(64) NOT NULL,
+    detail TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_lead_events_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE,
+    INDEX idx_lead_events_lead (lead_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 
@@ -170,7 +203,23 @@ def init_db() -> None:
                 cur.execute("SHOW COLUMNS FROM messages LIKE 'meta_json'")
                 if not cur.fetchone():
                     cur.execute("ALTER TABLE messages ADD COLUMN meta_json JSON NULL")
-                # M2 表已在 _SCHEMA 中 CREATE IF NOT EXISTS
+                # M2/M3 表已在 _SCHEMA 中 CREATE IF NOT EXISTS；兼容旧库补列
+                cur.execute("SHOW COLUMNS FROM leads LIKE 'virtual_number'")
+                if not cur.fetchone():
+                    try:
+                        cur.execute(
+                            "ALTER TABLE leads ADD COLUMN virtual_number VARCHAR(32) NOT NULL DEFAULT ''"
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+                cur.execute("SHOW COLUMNS FROM leads LIKE 'allow_push'")
+                if not cur.fetchone():
+                    try:
+                        cur.execute(
+                            "ALTER TABLE leads ADD COLUMN allow_push TINYINT(1) NOT NULL DEFAULT 1"
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
             conn.commit()
             logger.info(
                 "MySQL 就绪: %s:%s/%s",
@@ -235,6 +284,8 @@ def dump_tables() -> dict[str, list[dict]]:
         "lawyer_profiles",
         "disclaimer_acks",
         "session_slots",
+        "leads",
+        "lead_events",
     ]
     out: dict[str, list[dict]] = {}
     for t in tables:
@@ -253,6 +304,8 @@ def dump_tables() -> dict[str, list[dict]]:
 def restore_tables(data: dict[str, list[dict]]) -> None:
     """从 dump_tables 结构恢复（先清空再插入，注意外键顺序）。"""
     order = [
+        "lead_events",
+        "leads",
         "session_slots",
         "disclaimer_acks",
         "lawyer_profiles",
@@ -271,6 +324,8 @@ def restore_tables(data: dict[str, list[dict]]) -> None:
         "lawyer_profiles",
         "disclaimer_acks",
         "session_slots",
+        "leads",
+        "lead_events",
     ]
     with _lock:
         conn = get_conn()
