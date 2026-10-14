@@ -129,6 +129,26 @@ CREATE TABLE IF NOT EXISTS lead_events (
     CONSTRAINT fk_lead_events_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE,
     INDEX idx_lead_events_lead (lead_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS firms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    owner_user_id INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_firms_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_firms_owner (owner_user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS firm_members (
+    firm_id INT NOT NULL,
+    user_id INT NOT NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'member',
+    joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (firm_id, user_id),
+    CONSTRAINT fk_fm_firm FOREIGN KEY (firm_id) REFERENCES firms(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_fm_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 
@@ -284,6 +304,8 @@ def dump_tables() -> dict[str, list[dict]]:
         "lawyer_profiles",
         "disclaimer_acks",
         "session_slots",
+        "firms",
+        "firm_members",
         "leads",
         "lead_events",
     ]
@@ -306,6 +328,8 @@ def restore_tables(data: dict[str, list[dict]]) -> None:
     order = [
         "lead_events",
         "leads",
+        "firm_members",
+        "firms",
         "session_slots",
         "disclaimer_acks",
         "lawyer_profiles",
@@ -324,6 +348,8 @@ def restore_tables(data: dict[str, list[dict]]) -> None:
         "lawyer_profiles",
         "disclaimer_acks",
         "session_slots",
+        "firms",
+        "firm_members",
         "leads",
         "lead_events",
     ]

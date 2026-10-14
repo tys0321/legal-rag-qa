@@ -2,7 +2,7 @@
 
 ## 一句话进度
 
-法律 RAG 项目已完成 **M0 / M1 / M2**，**M3.1（案源后端闭环）已交付待确认**；下一步 **M3.2 轻量律所 → M3.3 案源前端 UI**。
+法律 RAG 项目已完成 **M0 / M1 / M2 / M3.1**，**M3.2（轻量律所）已交付待确认**；下一步 **M3.3 案源前端 UI**。
 
 ## 仓库与提交
 
@@ -12,7 +12,8 @@
   - `1279c87` feat(m0): MySQL + Docker Compose
   - `66c4da9` feat(m1): hybrid retrieval / rerank / critic
   - `e9335a6` feat(m2): lawyer auth / risk / slots / dual-mode UI
-  - （待推）feat(m3.1): leads publish / match / claim / simulated contact
+  - `c0e2ecf` feat(m3.1): leads publish / match / claim / simulated contact
+  - （待推）feat(m3.2): lightweight firms + firm-visible leads
 
 ## 已确认产品决策（摘要）
 

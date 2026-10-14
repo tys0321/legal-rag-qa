@@ -76,7 +76,7 @@ def create_lead(req: LeadCreateRequest, user: dict = Depends(get_current_user)) 
 
 @router.get("/leads", response_model=LeadListOut)
 def list_leads(
-    scope: str = Query("auto", description="auto|mine|plaza"),
+    scope: str = Query("auto", description="auto|mine|plaza|firm"),
     scene: str | None = Query(None),
     region: str | None = Query(None),
     user: dict = Depends(get_current_user),
@@ -84,6 +84,7 @@ def list_leads(
     """
     - mine：我发布的
     - plaza：广场开放案源（律师匹配排序；pending 只读）
+    - firm：所内可见（同所认领且 firm_visible）
     - auto：律师端默认 plaza，用户端默认 mine
     """
     access = lawyer_repo.lawyer_mode_access(user["id"])
@@ -106,8 +107,10 @@ def list_leads(
         else:
             # 普通用户也可浏览广场（只读开放案源，无匹配分）
             items = lead_repo.list_open_plaza(scene=scene, region=region)
+    elif scope == "firm":
+        items = lead_repo.list_for_firm(user["id"])
     else:
-        raise AppError("scope 须为 auto|mine|plaza", 400)
+        raise AppError("scope 须为 auto|mine|plaza|firm", 400)
 
     return LeadListOut(items=[_to_out(x) for x in items])
 

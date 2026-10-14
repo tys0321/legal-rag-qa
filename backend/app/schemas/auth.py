@@ -52,3 +52,6 @@ class UserOut(BaseModel):
     lawyer_access: str = "none"
     lawyer_status: str = "none"
     disclaimer_acked: bool = False
+    firm_id: int | None = None
+    firm_name: str = ""
+    firm_role: str = ""

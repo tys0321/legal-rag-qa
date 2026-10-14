@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from app.repositories import database as db
+from app.repositories import firms as firm_repo
 from app.repositories import lawyers as lawyer_repo
 
 VALID_STATUS = {"draft", "open", "claimed", "in_contact", "closed", "cancelled"}
@@ -337,6 +338,26 @@ def set_status(lead_id: int, actor_id: int, new_status: str, *, as_admin: bool =
     return updated
 
 
+def list_for_firm(user_id: int) -> list[dict]:
+    """所内可见案源：同所成员认领且 firm_visible=1。"""
+    membership = firm_repo.get_membership(user_id)
+    if not membership:
+        return []
+    firm_id = int(membership["firm_id"])
+    rows = db.query(
+        """
+        SELECT l.*
+        FROM leads l
+        JOIN firm_members fm ON fm.user_id = l.claimed_by AND fm.firm_id = ?
+        WHERE l.firm_visible = 1
+          AND l.claimed_by IS NOT NULL
+        ORDER BY l.updated_at DESC, l.id DESC
+        """,
+        (firm_id,),
+    )
+    return [_row_to_lead(r) for r in rows]
+
+
 def can_view_lead(user: dict, lead: dict) -> bool:
     uid = user["id"]
     if user.get("role") == "admin":
@@ -348,4 +369,8 @@ def can_view_lead(user: dict, lead: dict) -> bool:
     # 开放案源：律师端可读（含 pending 只读）
     if lead["status"] == "open":
         return True
+    # 所内可见：认领律师与查看者同所，且 firm_visible
+    if lead.get("firm_visible") and lead.get("claimed_by"):
+        if firm_repo.same_firm(uid, int(lead["claimed_by"])):
+            return True
     return False
