@@ -1,21 +1,21 @@
-/* ============ 法律知识问答助手 · 全新视觉 ============ */
+/* ============ ???????? � ???? ============ */
 :root {
-  /* 主色：庄重蓝 + 金色点缀（法律感） */
-  --primary: #1e4fd8;
-  --primary-dark: #163da8;
-  --primary-light: #e8eefc;
-  --gold: #c9a227;
-  --bg: #f3f5f9;
+  /* ??????? + ???? */
+  --primary: #1a365d;
+  --primary-dark: #0f2744;
+  --primary-light: #e8eef5;
+  --gold: #c4a35a;
+  --bg: #eef2f7;
   --card: #ffffff;
-  --sidebar-bg: #16203a;
-  --sidebar-text: #c8d2e8;
-  --sidebar-active: #223158;
+  --sidebar-bg: #0f2744;
+  --sidebar-text: #d5dde8;
+  --sidebar-active: #1a365d;
   --text: #1c2333;
   --text-2: #5f6b85;
   --border: #e3e7ef;
-  --user-bubble: linear-gradient(135deg, #1e4fd8, #3b6ef0);
+  --user-bubble: linear-gradient(135deg, #1a365d, #2c5282);
   --fast: #0a9d58;
-  --slow: #7b5cd6;
+  --slow: #2c5282;
   --danger: #d93026;
   --radius: 12px;
   --shadow: 0 1px 3px rgba(20, 30, 60, 0.08), 0 4px 14px rgba(20, 30, 60, 0.06);
@@ -46,7 +46,7 @@ body {
   height: 100vh;
 }
 
-/* ============ 侧边栏 ============ */
+/* ============ ??? ============ */
 .sidebar {
   width: 280px;
   flex-shrink: 0;
@@ -191,7 +191,7 @@ body {
   line-height: 1.7;
 }
 
-/* 批量管理模式 */
+/* ?????? */
 .chat-toolbar {
   display: flex;
   gap: 6px;
@@ -267,7 +267,7 @@ body {
   background: rgba(30, 79, 216, 0.25);
 }
 
-/* 知识库侧栏 */
+/* ????? */
 .btn-upload {
   width: 100%;
   background: rgba(255, 255, 255, 0.08);
@@ -390,7 +390,7 @@ body {
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* ============ 主区域 ============ */
+/* ============ ??? ============ */
 .main-area {
   flex: 1;
   display: flex;
@@ -429,7 +429,7 @@ body {
   font-weight: 600;
 }
 
-/* 免责横幅 */
+/* ???? */
 .banner {
   background: linear-gradient(135deg, #fff8e6, #fff3d0);
   color: #8c6d1f;
@@ -439,7 +439,7 @@ body {
   text-align: center;
 }
 
-/* 聊天区 */
+/* ??? */
 .chat-area {
   flex: 1;
   overflow-y: auto;
@@ -476,7 +476,7 @@ body {
   line-height: 1.7;
 }
 
-/* 消息 */
+/* ?? */
 .msg {
   display: flex;
   gap: 12px;
@@ -534,7 +534,7 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-top-left-radius: 4px;
-  white-space: pre-wrap;   /* 保留回答中的换行，独立分行 */
+  white-space: pre-wrap;   /* ????????????? */
   overflow-wrap: break-word;
 }
 
@@ -603,7 +603,7 @@ body {
   }
 }
 
-/* 引用来源 */
+/* ???? */
 .inline-sources,
 .related-cases {
   margin-top: 12px;
@@ -635,12 +635,12 @@ body {
   display: none;
 }
 .src-item summary::before {
-  content: "▸";
+  content: "?";
   color: var(--text-2);
   font-size: 10px;
 }
 .src-item[open] summary::before {
-  content: "▾";
+  content: "?";
 }
 .src-num {
   background: var(--primary);
@@ -700,7 +700,7 @@ body {
   font-weight: 600;
 }
 
-/* ============ 输入区 ============ */
+/* ============ ??? ============ */
 .input-area {
   border-top: 1px solid var(--border);
   background: var(--card);
@@ -798,7 +798,7 @@ code {
   font-size: 13px;
 }
 
-/* 法条高亮 */
+/* ???? */
 .hl-law {
   color: #b45309;
   font-weight: 700;
@@ -818,7 +818,7 @@ code {
   white-space: nowrap;
 }
 
-/* AI 回答块级排版 */
+/* AI ?????? */
 .msg.ai .bubble p {
   margin: 0 0 8px;
 }
@@ -859,14 +859,14 @@ code {
   font-weight: 600;
 }
 .md-sub {
-  margin: 2px 0 0 32px;      /* 对齐编号徽标右侧 */
+  margin: 2px 0 0 32px;      /* ???????? */
   padding-left: 10px;
   border-left: 2px solid var(--primary-light);
   color: var(--text);
   line-height: 1.7;
 }
 
-/* ============ 登录页 ============ */
+/* ============ ??? ============ */
 .auth-wrap {
   height: 100vh;
   display: flex;
@@ -967,7 +967,7 @@ code {
   line-height: 1.6;
 }
 
-/* ============ 注册约束样式 ============ */
+/* ============ ?????? ============ */
 .input-error {
   border-color: var(--danger) !important;
   box-shadow: 0 0 0 3px rgba(217, 48, 38, 0.12) !important;
@@ -985,7 +985,7 @@ code {
   color: var(--fast);
 }
 
-/* 管理员徽标 */
+/* ????? */
 .admin-badge {
   display: inline-block;
   margin-left: 6px;
@@ -998,7 +998,7 @@ code {
   vertical-align: 1px;
 }
 
-/* ============ 登录卡片精致化 ============ */
+/* ============ ??????? ============ */
 .auth-wrap {
   position: relative;
   overflow: hidden;
@@ -1052,7 +1052,7 @@ code {
   letter-spacing: 2px;
 }
 
-/* ============ 响应式 ============ */
+/* ============ ??? ============ */
 @media (max-width: 760px) {
   .sidebar {
     width: 220px;
@@ -1062,7 +1062,7 @@ code {
   }
 }
 
-/* ============ 管理后台 ============ */
+/* ============ ???? ============ */
 .admin-active {
   background: var(--primary-light) !important;
   color: var(--primary) !important;
@@ -1185,7 +1185,7 @@ code {
   margin-bottom: 2px;
 }
 
-/* 版本管理 */
+/* ???? */
 .bk-hint {
   font-size: 12px;
   color: var(--text-2);
@@ -1262,7 +1262,7 @@ code {
   background: var(--primary-light) !important;
 }
 
-/* 用户搜索 */
+/* ???? */
 .au-search {
   width: 100%;
   border: 1px solid var(--border);
@@ -1276,7 +1276,7 @@ code {
   border-color: var(--primary);
 }
 
-/* 操作日志 */
+/* ???? */
 .log-head {
   display: flex;
   align-items: center;
@@ -1317,7 +1317,7 @@ code {
   color: var(--text-2);
 }
 
-/* 全局 toast */
+/* ?? toast */
 .global-toast {
   position: fixed;
   top: 18px;
@@ -1353,3 +1353,90 @@ code {
     transform: translateX(-50%) translateY(0);
   }
 }
+
+/* ===== M2: mode switch / disclaimer / lawyer / risk ===== */
+.mode-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #fff;
+}
+.mode-switch button {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.mode-switch button.active {
+  background: var(--primary);
+  color: #fff;
+}
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 39, 68, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  width: min(480px, 92vw);
+  box-shadow: var(--shadow);
+  border-top: 4px solid var(--gold);
+}
+.modal-card h2 { margin-bottom: 12px; color: var(--primary); }
+.modal-card ul { margin: 12px 0 20px 18px; color: var(--text-2); }
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.risk-banner {
+  margin: 0 20px 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.risk-banner.danger { background: #fdecea; color: #a12622; border: 1px solid #f5c2c0; }
+.risk-banner.warn { background: #fff8e6; color: #7a5b00; border: 1px solid #f0e0a8; }
+.lawyer-panel { padding: 24px; max-width: 720px; }
+.lawyer-form { display: grid; gap: 12px; margin-top: 16px; }
+.lawyer-form label { display: grid; gap: 6px; font-size: 13px; color: var(--text-2); }
+.lawyer-form input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.answer-disclaimer {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.cta-lawyer {
+  margin-top: 10px;
+  background: var(--gold);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.badge.slot { background: #b7791f; }
+.badge.risk_block { background: var(--danger); }
+.badge.scene { background: var(--primary); }
+.form-msg { font-size: 13px; color: var(--primary); }
+.muted { color: var(--text-2); font-size: 13px; }

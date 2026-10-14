@@ -45,6 +45,10 @@ export function useChat(): ChatController {
           sources: resp.sources ?? [],
           relatedCases: resp.related_cases ?? [],
           confidence: resp.confidence,
+          riskLevel: resp.risk_level,
+          riskBanner: resp.risk_banner,
+          forceLawyerCta: resp.force_lawyer_cta,
+          scene: resp.scene,
         };
         setMessages((prev) => [...prev, aiMsg]);
         // 通知侧边栏刷新会话列表

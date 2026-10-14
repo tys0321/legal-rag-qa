@@ -1,0 +1,67 @@
+{
+  "scenes": [
+    {
+      "id": "劳动用工",
+      "keywords": ["工资", "拖欠", "加班", "辞退", "开除", "劳动合同", "社保", "工伤", "离职", "仲裁"],
+      "slots": [
+        {"key": "has_contract", "prompt": "是否签订了书面劳动合同？（是/否/不确定）", "required": true},
+        {"key": "hire_date", "prompt": "大概入职时间是什么时候？", "required": true},
+        {"key": "claim", "prompt": "主要诉求是什么？（如拖欠工资、违法解除、工伤等）", "required": true}
+      ]
+    },
+    {
+      "id": "房屋租赁",
+      "keywords": ["租房", "押金", "房东", "承租", "租金", "退房", "中介", "物业"],
+      "slots": [
+        {"key": "has_lease", "prompt": "是否有书面租赁合同？", "required": true},
+        {"key": "deposit", "prompt": "押金金额大约多少？房东扣押金的理由是什么？", "required": true},
+        {"key": "dispute", "prompt": "目前争议焦点是什么？（不退押金/提前解约/房屋质量等）", "required": true}
+      ]
+    },
+    {
+      "id": "婚姻家事",
+      "keywords": ["离婚", "抚养", "赡养", "彩礼", "家暴", "夫妻", "继承", "财产分割"],
+      "slots": [
+        {"key": "married", "prompt": "双方目前是否在婚姻存续期间？", "required": true},
+        {"key": "children", "prompt": "是否有未成年子女？", "required": true},
+        {"key": "issue", "prompt": "主要争议是什么？（离婚/抚养/财产等）", "required": true}
+      ]
+    },
+    {
+      "id": "交通事故",
+      "keywords": ["车祸", "交通事故", "人伤", "保险", "交警", "肇事", "赔偿", "伤残"],
+      "slots": [
+        {"key": "liability", "prompt": "交警责任认定结果是什么？（全责/主次/同等/未认定）", "required": true},
+        {"key": "injury", "prompt": "是否有人员受伤或伤残鉴定？", "required": true},
+        {"key": "insurance", "prompt": "对方是否有交强险/商业险？", "required": false}
+      ]
+    },
+    {
+      "id": "消费维权",
+      "keywords": ["退货", "假货", "消费", "商家", "网购", "三包", "欺诈", "赔偿"],
+      "slots": [
+        {"key": "product", "prompt": "购买的是什么商品或服务？金额大概多少？", "required": true},
+        {"key": "proof", "prompt": "是否保留购物凭证、聊天记录或检测报告？", "required": true},
+        {"key": "demand", "prompt": "希望如何处理？（退款/换货/三倍赔偿等）", "required": true}
+      ]
+    },
+    {
+      "id": "行政诉讼",
+      "keywords": ["行政诉讼", "复议", "行政处罚", "政府", "不动", "征收", "信息公开"],
+      "slots": [
+        {"key": "act_type", "prompt": "针对的是哪类行政行为？（处罚/许可/征收/信息公开等）", "required": true},
+        {"key": "timeline", "prompt": "收到决定书或知道该行为大概是什么时间？", "required": true},
+        {"key": "goal", "prompt": "希望撤销、变更还是确认违法？", "required": false}
+      ]
+    },
+    {
+      "id": "合同纠纷",
+      "keywords": ["合同", "违约", "买卖", "服务合同", "定金", "违约金", "履行"],
+      "slots": [
+        {"key": "contract_type", "prompt": "合同类型是什么？（买卖/服务/加工等）", "required": true},
+        {"key": "breach", "prompt": "对方如何违约？你的损失大概多少？", "required": true},
+        {"key": "evidence", "prompt": "是否有书面合同及履行/违约证据？", "required": true}
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import type {
   ChatResponse,
   ChatMessage,
   DocumentItem,
+  LawyerProfile,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -208,5 +209,38 @@ export const api = {
   },
   backupDelete(name: string): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/api/admin/backup/${name}`, { method: "DELETE" });
+  },
+
+  // ---- 律师 / 免责（M2） ----
+  lawyerStatus(): Promise<LawyerProfile> {
+    return request<LawyerProfile>("/api/lawyer/status");
+  },
+  lawyerApplyJson(body: {
+    license_no: string;
+    region: string;
+    specialties: string[];
+  }): Promise<LawyerProfile> {
+    return request<LawyerProfile>("/api/lawyer/apply/json", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  adminLawyerPending(): Promise<{ items: LawyerProfile[] }> {
+    return request<{ items: LawyerProfile[] }>("/api/admin/lawyer/pending");
+  },
+  adminLawyerReview(userId: number, approve: boolean, reason = ""): Promise<LawyerProfile> {
+    return request<LawyerProfile>(`/api/admin/lawyer/${userId}/review`, {
+      method: "POST",
+      body: JSON.stringify({ approve, reason }),
+    });
+  },
+  disclaimerStatus(): Promise<{ acked: boolean }> {
+    return request<{ acked: boolean }>("/api/disclaimer/status");
+  },
+  disclaimerAck(): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>("/api/disclaimer/ack", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
   },
 };

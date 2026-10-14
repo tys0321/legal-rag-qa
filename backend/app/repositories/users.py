@@ -85,8 +85,8 @@ def get_user_by_username(username: str) -> dict | None:
 
 
 def set_role(username: str, role: str) -> bool:
-    """设置用户角色（admin / user）。返回是否成功。"""
-    if role not in ("admin", "user"):
+    """设置用户角色（admin / user / lawyer）。返回是否成功。"""
+    if role not in ("admin", "user", "lawyer"):
         return False
     cur = db.execute("UPDATE users SET role = ? WHERE username = ?", (role, username.strip()))
     return cur.rowcount > 0

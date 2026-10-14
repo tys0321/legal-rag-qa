@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 
 from app.core.auth import get_current_user
 from app.core.errors import AppError
+from app.repositories import lawyers as lawyer_repo
 from app.repositories import users as user_repo
 from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserOut
 
@@ -51,9 +52,13 @@ def logout(authorization: str | None = None):
 
 @router.get("/me", response_model=UserOut)
 def me(user: dict = Depends(get_current_user)) -> UserOut:
+    profile = lawyer_repo.get_profile(user["id"])
     return UserOut(
         id=user["id"],
         username=user["username"],
         created_at=user["created_at"],
         role=user.get("role", "user"),
+        lawyer_access=lawyer_repo.lawyer_mode_access(user["id"]),
+        lawyer_status=(profile or {}).get("status") or "none",
+        disclaimer_acked=lawyer_repo.has_disclaimer_ack(user["id"]),
     )

@@ -49,3 +49,6 @@ class UserOut(BaseModel):
     username: str
     created_at: str
     role: str = "user"
+    lawyer_access: str = "none"
+    lawyer_status: str = "none"
+    disclaimer_acked: bool = False

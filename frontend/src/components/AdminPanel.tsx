@@ -2,26 +2,36 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api/client";
-import type { AdminLogItem, AdminStats, AdminUserItem, SnapshotItem, SystemStatus } from "../api/types";
+import type {
+  AdminLogItem,
+  AdminStats,
+  AdminUserItem,
+  LawyerProfile,
+  SnapshotItem,
+  SystemStatus,
+} from "../api/types";
 
 export default function AdminPanel() {
   const [users, setUsers] = useState<AdminUserItem[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [pendingLawyers, setPendingLawyers] = useState<LawyerProfile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const [u, s, st] = await Promise.all([
+      const [u, s, st, lw] = await Promise.all([
         api.adminUsers(),
         api.adminStats(),
         api.adminStatus(),
+        api.adminLawyerPending().catch(() => ({ items: [] as LawyerProfile[] })),
       ]);
       setUsers(u.users);
       setStats(s);
       setStatus(st);
+      setPendingLawyers(lw.items || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     }
@@ -95,6 +105,52 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+
+      <div className="admin-section">
+        <h3>⚖️ 律师认证待审（{pendingLawyers.length}）</h3>
+        {pendingLawyers.length === 0 ? (
+          <div className="bk-empty">暂无待审申请</div>
+        ) : (
+          <div className="admin-users">
+            {pendingLawyers.map((p) => (
+              <div className="admin-user" key={p.user_id}>
+                <div className="au-info">
+                  <span className="au-name">
+                    {p.username || `用户#${p.user_id}`}
+                    <span className="admin-badge">待审</span>
+                  </span>
+                  <span className="au-meta">
+                    证号 {p.license_no} · {p.region} · {(p.specialties || []).join("、")}
+                  </span>
+                </div>
+                <div className="au-actions">
+                  <button
+                    className="btn-sm"
+                    onClick={() =>
+                      void api.adminLawyerReview(p.user_id, true).then(refresh).catch((e) =>
+                        setError(e instanceof Error ? e.message : "审核失败"),
+                      )
+                    }
+                  >
+                    通过
+                  </button>
+                  <button
+                    className="btn-sm btn-danger"
+                    onClick={() =>
+                      void api
+                        .adminLawyerReview(p.user_id, false, "材料不完整")
+                        .then(refresh)
+                        .catch((e) => setError(e instanceof Error ? e.message : "审核失败"))
+                    }
+                  >
+                    驳回
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="admin-section">
         <h3>👥 用户列表（{users.length}）</h3>

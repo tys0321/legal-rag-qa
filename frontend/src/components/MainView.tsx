@@ -1,5 +1,4 @@
-// 主界面：侧边栏（对话历史/知识库/管理后台）+ 主视图（聊天/后台）
-// 注意：此组件以 userId 为 key 挂载，登录用户切换时完全重建
+// 主界面：同壳顶栏切换用户版/律师版 + 免责弹窗 + 风险条
 
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
@@ -9,7 +8,9 @@ import Sidebar from "./Sidebar";
 import MessageBubble from "./MessageBubble";
 import InputBar from "./InputBar";
 import AdminPanel from "./AdminPanel";
-import type { StatsResponse } from "../api/types";
+import DisclaimerModal from "./DisclaimerModal";
+import LawyerPanel from "./LawyerPanel";
+import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
   userId: string;
@@ -18,18 +19,22 @@ interface Props {
   onLogout: () => void;
 }
 
+type AppMode = "user" | "lawyer";
+
 export default function MainView({ userId, username, isAdmin, onLogout }: Props) {
-  // userId 仅用于 React key 强制重挂载，此处保留避免 lint 报错
   void userId;
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [view, setView] = useState<"chat" | "admin">("chat");
+  const [appMode, setAppMode] = useState<AppMode>("user");
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [lawyer, setLawyer] = useState<LawyerProfile | null>(null);
+  const [riskBanner, setRiskBanner] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { messages, busy, activeSessionId, send, loadSession, newSession } = useChat();
   const sessionsCtrl = useSessions(activeSessionId, loadSession, newSession);
 
-  // 全局 toast（网络错误 / 操作失败提示）
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -40,24 +45,59 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
     return () => window.removeEventListener("app:toast", handler);
   }, []);
 
-  // 知识库统计
   useEffect(() => {
     api.stats().then(setStats).catch(() => undefined);
+    api
+      .me()
+      .then((u) => {
+        if (!u.disclaimer_acked) setShowDisclaimer(true);
+      })
+      .catch(() => undefined);
+    api.lawyerStatus().then(setLawyer).catch(() => undefined);
   }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, busy]);
 
+  useEffect(() => {
+    const last = [...messages].reverse().find((m) => m.role === "assistant" && m.riskBanner);
+    setRiskBanner(last?.riskBanner || "");
+  }, [messages]);
+
   const handleAdminClick = () => {
     setView((v) => (v === "admin" ? "chat" : "admin"));
   };
 
+  const switchMode = (mode: AppMode) => {
+    if (mode === "lawyer") {
+      const access = lawyer?.access || "none";
+      if (access === "none" || access === "rejected") {
+        setAppMode("lawyer");
+        return;
+      }
+      // pending_readonly / approved 均可进入律师壳
+      setAppMode("lawyer");
+      return;
+    }
+    setAppMode("user");
+  };
+
+  const ackDisclaimer = async () => {
+    try {
+      await api.disclaimerAck();
+      setShowDisclaimer(false);
+    } catch (e) {
+      setToast({ message: e instanceof Error ? e.message : "确认失败", type: "error" });
+    }
+  };
+
+  const readonlyLawyer = lawyer?.access === "pending_readonly";
+
   return (
-    <div className="app">
-      {toast && (
-        <div className={`global-toast ${toast.type}`}>{toast.message}</div>
-      )}
+    <div className="app theme-lawfirm">
+      {showDisclaimer && <DisclaimerModal onAck={() => void ackDisclaimer()} />}
+      {toast && <div className={`global-toast ${toast.type}`}>{toast.message}</div>}
       <Sidebar
         sessions={sessionsCtrl.sessions}
         activeId={activeSessionId}
@@ -78,15 +118,39 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
         <header className="topbar">
           <div className="brand">
             <div>
-              <h1>{view === "admin" ? "管理后台" : "法律知识问答助手"}</h1>
+              <h1>
+                {view === "admin"
+                  ? "管理后台"
+                  : appMode === "lawyer"
+                    ? "法律知识顾问 · 律师版"
+                    : "法律知识顾问 · 用户版"}
+              </h1>
               <p className="subtitle">
                 {view === "admin"
-                  ? "系统数据总览 · 用户管理"
-                  : "基于 RAG 检索增强生成 · 引用可溯源"}
+                  ? "系统数据总览 · 用户/律师审核"
+                  : "RAG 检索增强 · 引用可溯源 · 风险分级"}
               </p>
             </div>
           </div>
           <div className="topbar-actions">
+            {view === "chat" && (
+              <div className="mode-switch">
+                <button
+                  type="button"
+                  className={appMode === "user" ? "active" : ""}
+                  onClick={() => switchMode("user")}
+                >
+                  用户版
+                </button>
+                <button
+                  type="button"
+                  className={appMode === "lawyer" ? "active" : ""}
+                  onClick={() => switchMode("lawyer")}
+                >
+                  律师版
+                </button>
+              </div>
+            )}
             {view === "chat" && stats && (
               <span className="stat-pill">
                 {stats.doc_count} 文档 · {stats.chunk_count} 片段
@@ -99,28 +163,36 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
           <div className="admin-scroll">
             <AdminPanel />
           </div>
+        ) : appMode === "lawyer" ? (
+          <main className="chat-area lawyer-area">
+            <div className="banner">
+              ⚠️ AI 生成内容仅供参考，不构成正式法律意见。律师办案请以现行法规与个案事实为准。
+            </div>
+            <LawyerPanel readonlyMode={readonlyLawyer || lawyer?.access === "none"} />
+          </main>
         ) : (
           <>
             <div className="banner">
               ⚠️ AI 生成内容仅供参考，不构成正式法律意见。具体案件请咨询专业法律人士。
             </div>
+            {riskBanner && <div className="risk-banner danger">{riskBanner}</div>}
             <main className="chat-area">
               {messages.length === 0 && (
                 <div className="welcome">
                   <div className="welcome-icon">⚖️</div>
                   <h2>有什么法律问题想了解？</h2>
                   <p>
-                    可询问具体法条、司法解释、行政处罚规定等，回答将附带引用来源与相似案例推荐。
+                    覆盖劳动、租房、婚姻、交通事故、消费、行政诉讼、合同等场景；系统可能追问关键案情要素以提升回答质量。
                   </p>
                 </div>
               )}
               {messages.map((m) => (
-                <MessageBubble key={m.id} message={m} />
+                <MessageBubble key={m.id} message={m} onSwitchLawyer={() => switchMode("lawyer")} />
               ))}
               {busy && (
                 <div className="msg ai">
                   <div className="avatar">⚖️</div>
-                  <div className="bubble typing">正在检索知识库并生成回答…</div>
+                  <div className="bubble typing">正在分析风险并检索知识库…</div>
                 </div>
               )}
               <div ref={bottomRef} />

@@ -3,6 +3,11 @@
 import { useState } from "react";
 import type { ChatMessage, RelatedCase, Source } from "../api/types";
 
+interface BubbleProps {
+  message: ChatMessage;
+  onSwitchLawyer?: () => void;
+}
+
 function escHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -92,11 +97,7 @@ function renderBlock(text: string): string {
   return out.join("");
 }
 
-interface Props {
-  message: ChatMessage;
-}
-
-export default function MessageBubble({ message }: Props) {
+export default function MessageBubble({ message, onSwitchLawyer }: BubbleProps) {
   const [expanded, setExpanded] = useState(false);
 
   if (message.role === "user") {
@@ -109,6 +110,15 @@ export default function MessageBubble({ message }: Props) {
   }
 
   const sources = message.sources ?? [];
+  const modeLabel =
+    message.mode === "fast"
+      ? "⚡ 常识回答"
+      : message.mode === "slot"
+        ? "🧩 补充案情"
+        : message.mode === "risk_block"
+          ? "⛔ 风险拦截"
+          : "📚 知识库回答";
+
   return (
     <div className="msg ai">
       <div className="avatar">⚖️</div>
@@ -118,11 +128,12 @@ export default function MessageBubble({ message }: Props) {
         ) : (
           <>
             <div dangerouslySetInnerHTML={{ __html: renderBlock(message.content) }} />
+            <p className="answer-disclaimer">
+              ⚠️ 以上内容由 AI 基于知识库生成，仅供参考，不构成正式法律意见。
+            </p>
             {message.mode && (
               <div className="meta">
-                <span className={`badge ${message.mode}`}>
-                  {message.mode === "fast" ? "⚡ 常识回答" : "📚 知识库回答"}
-                </span>
+                <span className={`badge ${message.mode}`}>{modeLabel}</span>
                 {message.confidence && (
                   <span className={`badge conf-${message.confidence}`}>
                     {message.confidence === "high"
@@ -132,6 +143,7 @@ export default function MessageBubble({ message }: Props) {
                         : "置信度：中"}
                   </span>
                 )}
+                {message.scene && <span className="badge scene">{message.scene}</span>}
                 {sources.length > 0 && (
                   <button className="src-btn" onClick={() => setExpanded((v) => !v)}>
                     {expanded ? "收起引用来源" : `查看 ${sources.length} 个引用来源`}
@@ -139,9 +151,12 @@ export default function MessageBubble({ message }: Props) {
                 )}
               </div>
             )}
-            {expanded && sources.length > 0 && (
-              <SourceList sources={sources} />
+            {message.forceLawyerCta && (
+              <button type="button" className="cta-lawyer" onClick={onSwitchLawyer}>
+                转律师 / 进入律师版认证与对接
+              </button>
             )}
+            {expanded && sources.length > 0 && <SourceList sources={sources} />}
             {message.relatedCases && message.relatedCases.length > 0 && (
               <RelatedCases cases={message.relatedCases} />
             )}

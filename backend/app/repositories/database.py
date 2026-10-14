@@ -67,6 +67,35 @@ CREATE TABLE IF NOT EXISTS admin_logs (
     detail TEXT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS lawyer_profiles (
+    user_id INT PRIMARY KEY,
+    license_no VARCHAR(64) NOT NULL DEFAULT '',
+    license_files_json JSON NULL,
+    specialties_json JSON NULL,
+    region VARCHAR(64) NOT NULL DEFAULT '',
+    status VARCHAR(32) NOT NULL DEFAULT 'none',
+    reject_reason VARCHAR(255) NOT NULL DEFAULT '',
+    reviewed_by INT NULL,
+    reviewed_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_lawyer_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS disclaimer_acks (
+    user_id INT PRIMARY KEY,
+    acked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_disclaimer_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS session_slots (
+    session_id VARCHAR(32) PRIMARY KEY,
+    scene VARCHAR(64) NOT NULL DEFAULT '',
+    slots_json JSON NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_slots_session FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 
@@ -141,6 +170,7 @@ def init_db() -> None:
                 cur.execute("SHOW COLUMNS FROM messages LIKE 'meta_json'")
                 if not cur.fetchone():
                     cur.execute("ALTER TABLE messages ADD COLUMN meta_json JSON NULL")
+                # M2 表已在 _SCHEMA 中 CREATE IF NOT EXISTS
             conn.commit()
             logger.info(
                 "MySQL 就绪: %s:%s/%s",
@@ -196,7 +226,16 @@ def ping() -> bool:
 
 def dump_tables() -> dict[str, list[dict]]:
     """导出业务表为可 JSON 序列化结构（备份用）。"""
-    tables = ["users", "tokens", "sessions", "messages", "admin_logs"]
+    tables = [
+        "users",
+        "tokens",
+        "sessions",
+        "messages",
+        "admin_logs",
+        "lawyer_profiles",
+        "disclaimer_acks",
+        "session_slots",
+    ]
     out: dict[str, list[dict]] = {}
     for t in tables:
         rows = query(f"SELECT * FROM {t}")
@@ -213,8 +252,26 @@ def dump_tables() -> dict[str, list[dict]]:
 
 def restore_tables(data: dict[str, list[dict]]) -> None:
     """从 dump_tables 结构恢复（先清空再插入，注意外键顺序）。"""
-    order = ["admin_logs", "messages", "tokens", "sessions", "users"]
-    insert_order = ["users", "sessions", "tokens", "messages", "admin_logs"]
+    order = [
+        "session_slots",
+        "disclaimer_acks",
+        "lawyer_profiles",
+        "admin_logs",
+        "messages",
+        "tokens",
+        "sessions",
+        "users",
+    ]
+    insert_order = [
+        "users",
+        "sessions",
+        "tokens",
+        "messages",
+        "admin_logs",
+        "lawyer_profiles",
+        "disclaimer_acks",
+        "session_slots",
+    ]
     with _lock:
         conn = get_conn()
         try:

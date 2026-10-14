@@ -64,6 +64,14 @@ class Settings:
         self.confidence_high_threshold: float = float(os.getenv("CONFIDENCE_HIGH_THRESHOLD", "3.0"))
         self.confidence_mid_threshold: float = float(os.getenv("CONFIDENCE_MID_THRESHOLD", "1.0"))
 
+        # 风险分级（M2）：L2 重大财产阈值（元），默认 50 万
+        self.risk_l2_amount_yuan: float = float(os.getenv("RISK_L2_AMOUNT_YUAN", "500000"))
+        self.slot_guidance_enabled: bool = os.getenv("SLOT_GUIDANCE_ENABLED", "true").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
         # 会话
         self.session_dir: Path = PROJECT_ROOT / "data" / "sessions"
         self.max_history_rounds: int = int(os.getenv("MAX_HISTORY_ROUNDS", "12"))

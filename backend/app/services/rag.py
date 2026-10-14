@@ -95,13 +95,19 @@ FAST_SYSTEM_PROMPT = """你是「中国法律知识问答助手」，回答用�
 @dataclass
 class RagResult:
     answer: str
-    mode: str = "slow"  # fast | slow
+    mode: str = "slow"  # fast | slow | slot | risk_block
     sources: list[dict] = field(default_factory=list)
     disclaimer: str = DISCLAIMER
     routed_reason: str = ""
     related_cases: list[dict] = field(default_factory=list)
     confidence: str = "medium"  # high | medium | low
     critic_issues: list[str] = field(default_factory=list)
+    risk_level: str = "L3"
+    risk_banner: str = ""
+    force_lawyer_cta: bool = False
+    scene: str = ""
+    need_slots: list[dict] = field(default_factory=list)
+    waiting_for_slot: bool = False
 
 
 def _build_context(sources: list[dict]) -> str:

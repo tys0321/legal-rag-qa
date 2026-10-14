@@ -29,19 +29,27 @@ export interface RelatedCase {
 export interface ChatResponse {
   session_id: string;
   answer: string;
-  mode: "fast" | "slow";
+  mode: "fast" | "slow" | "slot" | "risk_block";
   sources: Source[];
   disclaimer: string;
   routed_reason: string;
   related_cases: RelatedCase[];
   confidence?: "high" | "medium" | "low";
   critic_issues?: string[];
+  risk_level?: "L1" | "L2" | "L3";
+  risk_banner?: string;
+  force_lawyer_cta?: boolean;
+  scene?: string;
+  need_slots?: { key: string; prompt: string }[];
+  waiting_for_slot?: boolean;
 }
 
 /** 对话请求 */
 export interface ChatRequest {
   message: string;
   session_id: string | null;
+  scene?: string | null;
+  skip_slots?: boolean;
 }
 
 /** 认证 */
@@ -57,6 +65,21 @@ export interface UserInfo {
   username: string;
   created_at: string;
   role?: string;
+  lawyer_access?: string;
+  lawyer_status?: string;
+  disclaimer_acked?: boolean;
+}
+
+export interface LawyerProfile {
+  user_id: number;
+  username?: string;
+  license_no: string;
+  region: string;
+  specialties: string[];
+  license_files: string[];
+  status: string;
+  reject_reason: string;
+  access: string;
 }
 
 /** 会话条目 */
@@ -109,10 +132,14 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  mode?: "fast" | "slow";
+  mode?: "fast" | "slow" | "slot" | "risk_block";
   sources?: Source[];
   relatedCases?: RelatedCase[];
   confidence?: "high" | "medium" | "low";
+  riskLevel?: string;
+  riskBanner?: string;
+  forceLawyerCta?: boolean;
+  scene?: string;
   error?: boolean;
 }
 
