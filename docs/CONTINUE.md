@@ -21,7 +21,7 @@
   - `98ae214` feat(m4.3): 52-scene catalog placeholders
   - `3806cc1` feat(m5.1): legal opinion draft via RAG+LLM
   - `630d39a` feat(m5.2): document templates ×8
-  - （本轮）feat(m5.3): legal calculators ×5
+  - `94d268c` feat(m5.3): legal calculators ×5
 
 ## 已确认产品决策（摘要）
 
