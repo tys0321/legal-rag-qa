@@ -15,7 +15,7 @@
   - `c0e2ecf` feat(m3.1): leads publish / match / claim / simulated contact
   - `49c4037` feat(m3.2): lightweight firms + firm-visible leads
   - `582c8e3` feat(m3.3): leads plaza / publish / firm UI
-  - （待推）feat(m4.1): laws search API + frontend panel
+  - `d75c8d8` feat(m4.1): laws search API + frontend panel
 
 ## 已确认产品决策（摘要）
 
