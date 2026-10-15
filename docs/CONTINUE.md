@@ -2,7 +2,7 @@
 
 ## 一句话进度
 
-法律 RAG 项目已完成 **M0–M4**，**M5.1（法律意见书）已交付待确认**；下一步 **M5.2 文书×8 → M5.3 计算器×5**。
+法律 RAG 项目已完成 **M0–M4**、**M5.1（意见书）**；**M5.2（文书×8）已交付待确认**；下一步 **M5.3 计算器×5**。
 
 ## 仓库与提交
 
@@ -19,7 +19,8 @@
   - `896e4da` docs(m4.1): real hybrid smoke results
   - `1d3f236` feat(m4.2): cases search API + case cards UI
   - `98ae214` feat(m4.3): 52-scene catalog placeholders
-  - （待推）feat(m5.1): legal opinion draft via RAG+LLM
+  - `3806cc1` feat(m5.1): legal opinion draft via RAG+LLM
+  - （本轮）feat(m5.2): document templates ×8
 
 ## 已确认产品决策（摘要）
 
@@ -36,15 +37,15 @@
 
 - PRD：`c:\Users\64517\Desktop\leqal\docs\PRD-产品需求文档.md`（另有 docx）
 - 技术需求：`c:\Users\64517\Desktop\leqal\docs\技术需求文档.md`
-- 模块说明：`legal-rag-qa/docs/M0|M1|M2-交付说明.md`
+- 模块说明：`legal-rag-qa/docs/M0|M1|M2|…|M5.2-交付说明.md`
 
 ## 新对话请直接粘贴
 
 ```
-确认 M4.3，开始 M5（P1：意见书 → 文书×8 → 计算器×5）。
+确认 M5.2，开始 M5.3（计算器×5）。
 
 基线仓库：c:\Users\64517\Desktop\leqal\legal-rag-qa
-请先阅读 docs/CONTINUE.md、docs/M4.3-交付说明.md，并对照 leqal/docs/PRD-产品需求文档.md。
+请先阅读 docs/CONTINUE.md、docs/M5.2-交付说明.md，并对照 leqal/docs/PRD-产品需求文档.md。
 规则：每完成一个模块先提交并说明测试结果，等我确认后再做下一项；技术栈截图项（RAG/LLM/Python/Web/MySQL/向量检索）必须真实使用。
 ```
 

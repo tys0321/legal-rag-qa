@@ -214,6 +214,50 @@ export interface OpinionResult {
   disclaimer: string;
 }
 
+/** 文书模板（M5.2） */
+export interface TemplateSummary {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  field_count: number;
+}
+
+export interface TemplateField {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  placeholder: string;
+}
+
+export interface TemplateDetail {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  fields: TemplateField[];
+  watermark: string;
+  disclaimer: string;
+}
+
+export interface TemplateListResult {
+  version: number;
+  total: number;
+  watermark: string;
+  items: TemplateSummary[];
+}
+
+export interface TemplateFillResult {
+  id: string;
+  name: string;
+  category: string;
+  markdown: string;
+  watermark: string;
+  disclaimer: string;
+  missing_required: string[];
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;

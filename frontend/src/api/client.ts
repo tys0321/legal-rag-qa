@@ -17,6 +17,9 @@ import type {
   LawyerProfile,
   OpinionResult,
   SceneCatalogResult,
+  TemplateDetail,
+  TemplateFillResult,
+  TemplateListResult,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -343,6 +346,20 @@ export const api = {
     return request<OpinionResult>("/api/opinions/generate", {
       method: "POST",
       body: JSON.stringify(body),
+    });
+  },
+
+  // ---- 文书模板（M5.2） ----
+  listTemplates(): Promise<TemplateListResult> {
+    return request<TemplateListResult>("/api/templates");
+  },
+  getTemplate(id: string): Promise<TemplateDetail> {
+    return request<TemplateDetail>(`/api/templates/${id}`);
+  },
+  fillTemplate(id: string, fields: Record<string, string>): Promise<TemplateFillResult> {
+    return request<TemplateFillResult>(`/api/templates/${id}`, {
+      method: "POST",
+      body: JSON.stringify({ fields }),
     });
   },
 };
