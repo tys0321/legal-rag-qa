@@ -15,6 +15,7 @@ import type {
   LeadCreateBody,
   LeadItem,
   LawyerProfile,
+  OpinionResult,
   SceneCatalogResult,
   SessionItem,
   SnapshotItem,
@@ -330,5 +331,18 @@ export const api = {
   listScenes(status?: "active" | "coming_soon"): Promise<SceneCatalogResult> {
     const q = status ? `?status=${status}` : "";
     return request<SceneCatalogResult>(`/api/scenes${q}`);
+  },
+
+  // ---- 意见书（M5） ----
+  generateOpinion(body: {
+    fact_summary: string;
+    scene?: string;
+    question?: string;
+    slot_answers?: Record<string, string>;
+  }): Promise<OpinionResult> {
+    return request<OpinionResult>("/api/opinions/generate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
   },
 };

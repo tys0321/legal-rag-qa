@@ -1702,6 +1702,32 @@ code {
   color: var(--text-2);
 }
 
+/* ===== M5: opinion ===== */
+.opinion-result {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+.opinion-result.blocked { border-color: #f5c2c0; background: #fff8f8; }
+.opinion-watermark {
+  font-size: 12px;
+  font-weight: 700;
+  color: #9a6b00;
+  background: #fff4e0;
+  border: 1px dashed var(--gold);
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.opinion-section { margin-top: 14px; }
+.opinion-section h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  color: var(--primary);
+}
+
 @media (max-width: 720px) {
   .lead-toolbar { flex-direction: column; align-items: stretch; }
   .sub-tabs, .user-tabs { overflow-x: auto; }

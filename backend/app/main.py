@@ -16,6 +16,7 @@ from app.api.documents import router as documents_router
 from app.api.lawyer_api import router as lawyer_router
 from app.api.firms_api import router as firms_router
 from app.api.leads_api import router as leads_router
+from app.api.opinions_api import router as opinions_router
 from app.api.scenes_api import router as scenes_router
 from app.api.search_api import router as search_router
 from app.api.sessions_api import router as sessions_router
@@ -58,6 +59,7 @@ app.include_router(leads_router)
 app.include_router(firms_router)
 app.include_router(search_router)
 app.include_router(scenes_router)
+app.include_router(opinions_router)
 
 
 @app.get("/api/health")

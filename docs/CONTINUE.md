@@ -2,7 +2,7 @@
 
 ## 一句话进度
 
-法律 RAG 项目已完成 **M0–M4.2**，当前交付 **M4.3（52 场景占位）待确认**；下一步 **M5 P1 工具（意见书/文书8/计算器5）**。
+法律 RAG 项目已完成 **M0–M4**，**M5.1（法律意见书）已交付待确认**；下一步 **M5.2 文书×8 → M5.3 计算器×5**。
 
 ## 仓库与提交
 
@@ -18,7 +18,8 @@
   - `d75c8d8` feat(m4.1): laws search API + frontend panel
   - `896e4da` docs(m4.1): real hybrid smoke results
   - `1d3f236` feat(m4.2): cases search API + case cards UI
-  - （待推）feat(m4.3): 52-scene catalog placeholders
+  - `98ae214` feat(m4.3): 52-scene catalog placeholders
+  - （待推）feat(m5.1): legal opinion draft via RAG+LLM
 
 ## 已确认产品决策（摘要）
 

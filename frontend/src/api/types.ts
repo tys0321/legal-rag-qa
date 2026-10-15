@@ -195,6 +195,25 @@ export interface SceneCatalogResult {
   items: SceneCatalogItem[];
 }
 
+/** 法律意见书（M5） */
+export interface OpinionResult {
+  scene: string;
+  risk_level: string;
+  blocked: boolean;
+  title: string;
+  sections: {
+    case_summary?: string;
+    legal_analysis?: string;
+    action_advice?: string;
+    disclaimer?: string;
+  };
+  markdown: string;
+  sources: Source[];
+  confidence: string;
+  watermark: string;
+  disclaimer: string;
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;
