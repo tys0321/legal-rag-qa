@@ -12,6 +12,7 @@ import DisclaimerModal from "./DisclaimerModal";
 import LawyerPanel from "./LawyerPanel";
 import LeadPublishForm from "./LeadPublishForm";
 import MyLeadsPanel from "./MyLeadsPanel";
+import LawsSearchPanel from "./LawsSearchPanel";
 import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
@@ -22,7 +23,7 @@ interface Props {
 }
 
 type AppMode = "user" | "lawyer";
-type UserTab = "chat" | "publish" | "my-leads";
+type UserTab = "chat" | "laws" | "publish" | "my-leads";
 
 export default function MainView({ userId, username, isAdmin, onLogout }: Props) {
   void userId;
@@ -181,6 +182,9 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               <button type="button" className={userTab === "chat" ? "active" : ""} onClick={() => setUserTab("chat")}>
                 AI 咨询
               </button>
+              <button type="button" className={userTab === "laws" ? "active" : ""} onClick={() => setUserTab("laws")}>
+                法规检索
+              </button>
               <button type="button" className={userTab === "publish" ? "active" : ""} onClick={() => setUserTab("publish")}>
                 发案源
               </button>
@@ -222,6 +226,11 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
                 </main>
                 <InputBar busy={busy} onSend={(t) => void send(t)} />
               </>
+            )}
+            {userTab === "laws" && (
+              <main className="chat-area lawyer-area">
+                <LawsSearchPanel />
+              </main>
             )}
             {userTab === "publish" && (
               <main className="chat-area lawyer-area">

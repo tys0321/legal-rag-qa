@@ -1632,7 +1632,28 @@ code {
 }
 .welcome .cta-lawyer { margin-top: 16px; }
 
+/* ===== M4: laws search ===== */
+.laws-search-bar {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.laws-search-bar input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+.law-excerpt {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  max-height: 240px;
+  overflow: auto;
+}
+
 @media (max-width: 720px) {
   .lead-toolbar { flex-direction: column; align-items: stretch; }
   .sub-tabs, .user-tabs { overflow-x: auto; }
+  .laws-search-bar { flex-direction: column; }
 }

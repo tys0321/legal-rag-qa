@@ -129,6 +129,32 @@ export interface FirmInfo {
   members: FirmMember[];
 }
 
+/** 法规检索命中（M4） */
+export interface LawHit {
+  id: string;
+  doc_id: string;
+  title: string;
+  category: string;
+  article: string;
+  page: number;
+  text: string;
+  score: number;
+  match?: string | null;
+  rrf_score?: number | null;
+  effective_status: string;
+  effective_detail: string;
+  bian?: string;
+  chapter?: string;
+  section?: string;
+}
+
+export interface LawSearchResult {
+  query: string;
+  backend: string;
+  total: number;
+  items: LawHit[];
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;

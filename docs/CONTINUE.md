@@ -2,7 +2,7 @@
 
 ## 一句话进度
 
-法律 RAG 项目已完成 **M0 / M1 / M2 / M3.1 / M3.2**，**M3.3（案源/律所前端）已交付待确认**；M3 全闭环完成后可进入 P1（意见书/文书/计算器）或 Buffer。
+法律 RAG 项目已完成 **M0–M3**，当前交付 **M4.1（法规检索页，真实混合检索）待确认**；下一步 **M4.2 类案卡 → M4.3 52 场景占位 → M5 P1 工具**。
 
 ## 仓库与提交
 
@@ -14,7 +14,8 @@
   - `e9335a6` feat(m2): lawyer auth / risk / slots / dual-mode UI
   - `c0e2ecf` feat(m3.1): leads publish / match / claim / simulated contact
   - `49c4037` feat(m3.2): lightweight firms + firm-visible leads
-  - （待推）feat(m3.3): leads plaza / publish / firm UI
+  - `582c8e3` feat(m3.3): leads plaza / publish / firm UI
+  - （待推）feat(m4.1): laws search API + frontend panel
 
 ## 已确认产品决策（摘要）
 
@@ -36,10 +37,10 @@
 ## 新对话请直接粘贴
 
 ```
-确认 M2，开始 M3（案源广场闭环：发需求→匹配→认领→模拟中间号/站内信；轻量律所）。
+确认 M4.1，继续 M4.2（类案卡：API + 前端展示）。
 
 基线仓库：c:\Users\64517\Desktop\leqal\legal-rag-qa
-请先阅读 docs/CONTINUE.md、docs/M2-交付说明.md，并对照 leqal/docs/PRD-产品需求文档.md。
+请先阅读 docs/CONTINUE.md、docs/M4.1-交付说明.md，并对照 leqal/docs/PRD-产品需求文档.md。
 规则：每完成一个模块先提交并说明测试结果，等我确认后再做下一项；技术栈截图项（RAG/LLM/Python/Web/MySQL/向量检索）必须真实使用。
 ```
 

@@ -10,6 +10,7 @@ import type {
   ChatMessage,
   DocumentItem,
   FirmInfo,
+  LawSearchResult,
   LeadCreateBody,
   LeadItem,
   LawyerProfile,
@@ -311,5 +312,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ username }),
     });
+  },
+
+  // ---- 法规检索（M4，混合检索） ----
+  searchLaws(q: string, topK = 8): Promise<LawSearchResult> {
+    const params = new URLSearchParams({ q, top_k: String(topK) });
+    return request<LawSearchResult>(`/api/laws/search?${params}`);
   },
 };
