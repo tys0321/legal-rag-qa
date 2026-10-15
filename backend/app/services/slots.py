@@ -24,14 +24,20 @@ def load_scenes() -> list[dict]:
 
 
 def detect_scene(question: str) -> str | None:
+    """仅在 MVP 已激活且配置了关键词的场景中识别。"""
+    from app.services.scenes_catalog import is_active
+
     q = question or ""
     best_id = None
     best_hits = 0
     for scene in load_scenes():
+        sid = scene.get("id") or ""
+        if sid and not is_active(sid):
+            continue
         hits = sum(1 for kw in scene.get("keywords") or [] if kw in q)
         if hits > best_hits:
             best_hits = hits
-            best_id = scene["id"]
+            best_id = sid
     return best_id if best_hits > 0 else None
 
 

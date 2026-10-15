@@ -14,6 +14,7 @@ import LeadPublishForm from "./LeadPublishForm";
 import MyLeadsPanel from "./MyLeadsPanel";
 import LawsSearchPanel from "./LawsSearchPanel";
 import CasesSearchPanel from "./CasesSearchPanel";
+import ScenesCatalogPanel from "./ScenesCatalogPanel";
 import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
@@ -24,7 +25,7 @@ interface Props {
 }
 
 type AppMode = "user" | "lawyer";
-type UserTab = "chat" | "laws" | "cases" | "publish" | "my-leads";
+type UserTab = "chat" | "scenes" | "laws" | "cases" | "publish" | "my-leads";
 
 export default function MainView({ userId, username, isAdmin, onLogout }: Props) {
   void userId;
@@ -183,6 +184,9 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               <button type="button" className={userTab === "chat" ? "active" : ""} onClick={() => setUserTab("chat")}>
                 AI 咨询
               </button>
+              <button type="button" className={userTab === "scenes" ? "active" : ""} onClick={() => setUserTab("scenes")}>
+                场景分类
+              </button>
               <button type="button" className={userTab === "laws" ? "active" : ""} onClick={() => setUserTab("laws")}>
                 法规检索
               </button>
@@ -230,6 +234,21 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
                 </main>
                 <InputBar busy={busy} onSend={(t) => void send(t)} />
               </>
+            )}
+            {userTab === "scenes" && (
+              <main className="chat-area lawyer-area">
+                <ScenesCatalogPanel
+                  onPickActive={(sceneId) => {
+                    setPublishScene(sceneId);
+                    setUserTab("chat");
+                    window.dispatchEvent(
+                      new CustomEvent("app:toast", {
+                        detail: { message: `已选择场景「${sceneId}」，可直接提问或发案源`, type: "success" },
+                      }),
+                    );
+                  }}
+                />
+              </main>
             )}
             {userTab === "laws" && (
               <main className="chat-area lawyer-area">

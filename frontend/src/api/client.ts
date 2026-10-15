@@ -15,6 +15,7 @@ import type {
   LeadCreateBody,
   LeadItem,
   LawyerProfile,
+  SceneCatalogResult,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -323,5 +324,11 @@ export const api = {
   searchCases(q: string, topK = 6): Promise<CaseSearchResult> {
     const params = new URLSearchParams({ q, top_k: String(topK) });
     return request<CaseSearchResult>(`/api/cases/search?${params}`);
+  },
+
+  // ---- 场景目录（M4.3，52 类占位） ----
+  listScenes(status?: "active" | "coming_soon"): Promise<SceneCatalogResult> {
+    const q = status ? `?status=${status}` : "";
+    return request<SceneCatalogResult>(`/api/scenes${q}`);
   },
 };

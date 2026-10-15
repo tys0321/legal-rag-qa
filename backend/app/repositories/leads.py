@@ -21,15 +21,25 @@ _TRANSITIONS: dict[str, set[str]] = {
     "cancelled": set(),
 }
 
-SCENE_IDS = {
-    "劳动用工",
-    "房屋租赁",
-    "婚姻家事",
-    "交通事故",
-    "消费维权",
-    "行政诉讼",
-    "合同纠纷",
-}
+def _active_scene_ids() -> set[str]:
+    """案源发布仅接受 MVP 已激活场景（与 scenes_catalog 对齐）。"""
+    try:
+        from app.services.scenes_catalog import mvp_ids
+
+        ids = set(mvp_ids())
+        if ids:
+            return ids
+    except Exception:  # noqa: BLE001
+        pass
+    return {
+        "劳动用工",
+        "房屋租赁",
+        "婚姻家事",
+        "交通事故",
+        "消费维权",
+        "行政诉讼",
+        "合同纠纷",
+    }
 
 
 def mask_contact(raw: str) -> str:
@@ -100,8 +110,9 @@ def create_lead(
     publish: bool = True,
 ) -> dict:
     scene = scene.strip()
-    if scene not in SCENE_IDS:
-        raise ValueError(f"场景须为七类之一: {', '.join(sorted(SCENE_IDS))}")
+    active = _active_scene_ids()
+    if scene not in active:
+        raise ValueError(f"场景须为已开放 MVP 场景之一: {', '.join(sorted(active))}")
     status = "open" if publish else "draft"
     masked = mask_contact(contact)
     cur = db.execute(

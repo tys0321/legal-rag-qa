@@ -176,6 +176,25 @@ export interface CaseSearchResult {
   items: CaseHit[];
 }
 
+/** 52 场景目录（M4） */
+export interface SceneCatalogItem {
+  id: string;
+  name: string;
+  group: string;
+  status: "active" | "coming_soon" | string;
+  alias: string;
+}
+
+export interface SceneCatalogResult {
+  version: number;
+  total: number;
+  active_count: number;
+  coming_soon_count: number;
+  mvp_ids: string[];
+  groups: Record<string, number>;
+  items: SceneCatalogItem[];
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;
