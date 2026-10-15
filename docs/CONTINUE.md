@@ -2,7 +2,7 @@
 
 ## 一句话进度
 
-法律 RAG 项目已完成 **M0–M3**，当前交付 **M4.1（法规检索页，真实混合检索）待确认**；下一步 **M4.2 类案卡 → M4.3 52 场景占位 → M5 P1 工具**。
+法律 RAG 项目已完成 **M0–M3 / M4.1**，当前交付 **M4.2（类案卡）待确认**；下一步 **M4.3 52 场景占位 → M5 P1 工具**。
 
 ## 仓库与提交
 
@@ -16,6 +16,8 @@
   - `49c4037` feat(m3.2): lightweight firms + firm-visible leads
   - `582c8e3` feat(m3.3): leads plaza / publish / firm UI
   - `d75c8d8` feat(m4.1): laws search API + frontend panel
+  - `896e4da` docs(m4.1): real hybrid smoke results
+  - （待推）feat(m4.2): cases search API + case cards UI
 
 ## 已确认产品决策（摘要）
 

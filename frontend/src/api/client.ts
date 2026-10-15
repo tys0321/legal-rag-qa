@@ -10,6 +10,7 @@ import type {
   ChatMessage,
   DocumentItem,
   FirmInfo,
+  CaseSearchResult,
   LawSearchResult,
   LeadCreateBody,
   LeadItem,
@@ -314,9 +315,13 @@ export const api = {
     });
   },
 
-  // ---- 法规检索（M4，混合检索） ----
+  // ---- 法规 / 类案检索（M4） ----
   searchLaws(q: string, topK = 8): Promise<LawSearchResult> {
     const params = new URLSearchParams({ q, top_k: String(topK) });
     return request<LawSearchResult>(`/api/laws/search?${params}`);
+  },
+  searchCases(q: string, topK = 6): Promise<CaseSearchResult> {
+    const params = new URLSearchParams({ q, top_k: String(topK) });
+    return request<CaseSearchResult>(`/api/cases/search?${params}`);
   },
 };

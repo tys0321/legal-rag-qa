@@ -155,6 +155,27 @@ export interface LawSearchResult {
   items: LawHit[];
 }
 
+/** 类案卡（M4） */
+export interface CaseHit {
+  id: string;
+  doc_id: string;
+  title: string;
+  category: string;
+  article: string;
+  page: number;
+  text: string;
+  score: number;
+  kind: string;
+}
+
+export interface CaseSearchResult {
+  query: string;
+  backend: string;
+  total: number;
+  notice: string;
+  items: CaseHit[];
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;

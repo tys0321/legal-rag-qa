@@ -13,6 +13,7 @@ import LawyerPanel from "./LawyerPanel";
 import LeadPublishForm from "./LeadPublishForm";
 import MyLeadsPanel from "./MyLeadsPanel";
 import LawsSearchPanel from "./LawsSearchPanel";
+import CasesSearchPanel from "./CasesSearchPanel";
 import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
@@ -23,7 +24,7 @@ interface Props {
 }
 
 type AppMode = "user" | "lawyer";
-type UserTab = "chat" | "laws" | "publish" | "my-leads";
+type UserTab = "chat" | "laws" | "cases" | "publish" | "my-leads";
 
 export default function MainView({ userId, username, isAdmin, onLogout }: Props) {
   void userId;
@@ -185,6 +186,9 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               <button type="button" className={userTab === "laws" ? "active" : ""} onClick={() => setUserTab("laws")}>
                 法规检索
               </button>
+              <button type="button" className={userTab === "cases" ? "active" : ""} onClick={() => setUserTab("cases")}>
+                类案参考
+              </button>
               <button type="button" className={userTab === "publish" ? "active" : ""} onClick={() => setUserTab("publish")}>
                 发案源
               </button>
@@ -230,6 +234,11 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
             {userTab === "laws" && (
               <main className="chat-area lawyer-area">
                 <LawsSearchPanel />
+              </main>
+            )}
+            {userTab === "cases" && (
+              <main className="chat-area lawyer-area">
+                <CasesSearchPanel />
               </main>
             )}
             {userTab === "publish" && (
