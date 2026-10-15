@@ -20,6 +20,9 @@ import type {
   TemplateDetail,
   TemplateFillResult,
   TemplateListResult,
+  CalculatorDetail,
+  CalculatorListResult,
+  CalculatorRunResult,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -360,6 +363,23 @@ export const api = {
     return request<TemplateFillResult>(`/api/templates/${id}`, {
       method: "POST",
       body: JSON.stringify({ fields }),
+    });
+  },
+
+  // ---- 法律计算器（M5.3） ----
+  listCalculators(): Promise<CalculatorListResult> {
+    return request<CalculatorListResult>("/api/calculators");
+  },
+  getCalculator(id: string): Promise<CalculatorDetail> {
+    return request<CalculatorDetail>(`/api/calculators/${id}`);
+  },
+  runCalculator(
+    id: string,
+    inputs: Record<string, string | number | boolean>,
+  ): Promise<CalculatorRunResult> {
+    return request<CalculatorRunResult>(`/api/calculators/${id}`, {
+      method: "POST",
+      body: JSON.stringify({ inputs }),
     });
   },
 };

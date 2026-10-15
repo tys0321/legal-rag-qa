@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "notice": "估算仅供参考，不构成正式法律意见或费用核定；具体以法院/仲裁机构认定及当地政策为准。",
+  "params": {
+    "lpr_annual_rate": 0.031,
+    "private_lend_max_multiplier": 4.0,
+    "default_monthly_wage": 6000,
+    "default_avg_monthly_wage": 8000
+  },
+  "calculators": [
+    {
+      "id": "litigation_fee",
+      "name": "诉讼费（民事）",
+      "category": "诉讼",
+      "description": "按财产案件受理费分段累进估算（参考《诉讼费用交纳办法》）。",
+      "fields": [
+        {"key": "amount", "label": "标的金额（元）", "type": "number", "required": true, "placeholder": "如：100000"},
+        {"key": "half_fee", "label": "是否减半交纳（调解/撤诉等）", "type": "select", "required": false, "options": ["否", "是"], "placeholder": "否"}
+      ]
+    },
+    {
+      "id": "private_lend_interest",
+      "name": "利息/逾期（民间借贷）",
+      "category": "借贷",
+      "description": "本金×年利率×天数/365；利率上限默认不超过合同订立时一年期 LPR 的 4 倍（可配置）。",
+      "fields": [
+        {"key": "principal", "label": "本金（元）", "type": "number", "required": true},
+        {"key": "annual_rate", "label": "约定年利率（小数，如 0.12）", "type": "number", "required": true, "placeholder": "0.12"},
+        {"key": "days", "label": "计息天数", "type": "number", "required": true, "placeholder": "365"},
+        {"key": "cap_by_lpr", "label": "是否按 LPR×4 封顶", "type": "select", "required": false, "options": ["是", "否"], "placeholder": "是"}
+      ]
+    },
+    {
+      "id": "work_injury",
+      "name": "工伤赔偿估算（简版）",
+      "category": "劳动",
+      "description": "按伤残等级简版估算一次性伤残补助金等（不含医疗费、停工留薪等全部项目）。",
+      "fields": [
+        {"key": "monthly_wage", "label": "本人工资（元/月）", "type": "number", "required": true, "placeholder": "6000"},
+        {"key": "grade", "label": "伤残等级（1-10）", "type": "number", "required": true, "placeholder": "10"},
+        {"key": "avg_wage", "label": "统筹地区上年度职工月平均工资（可选）", "type": "number", "required": false, "placeholder": "8000"}
+      ]
+    },
+    {
+      "id": "traffic_medical",
+      "name": "交通事故医疗费累加（简版）",
+      "category": "交通事故",
+      "description": "将已发生/预估医疗相关费用累加估算。",
+      "fields": [
+        {"key": "hospital", "label": "住院/门诊医疗费（元）", "type": "number", "required": true, "placeholder": "0"},
+        {"key": "medicine", "label": "药品费（元）", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "nursing", "label": "护理费（元）", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "nutrition", "label": "营养费（元）", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "transport", "label": "交通费（元）", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "other", "label": "其他合理费用（元）", "type": "number", "required": false, "placeholder": "0"}
+      ]
+    },
+    {
+      "id": "overtime_pay",
+      "name": "劳动加班费（简版）",
+      "category": "劳动",
+      "description": "按日工资×倍率×小时估算：工作日1.5、休息日2、法定节假日3。",
+      "fields": [
+        {"key": "monthly_wage", "label": "月工资（元）", "type": "number", "required": true, "placeholder": "6000"},
+        {"key": "weekday_hours", "label": "工作日加班小时数", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "restday_hours", "label": "休息日加班小时数", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "holiday_hours", "label": "法定节假日加班小时数", "type": "number", "required": false, "placeholder": "0"},
+        {"key": "workdays_per_month", "label": "月计薪天数（默认21.75）", "type": "number", "required": false, "placeholder": "21.75"}
+      ]
+    }
+  ]
+}

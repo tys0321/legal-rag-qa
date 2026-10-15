@@ -258,6 +258,59 @@ export interface TemplateFillResult {
   missing_required: string[];
 }
 
+/** 法律计算器（M5.3） */
+export interface CalculatorSummary {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  field_count: number;
+}
+
+export interface CalculatorField {
+  key: string;
+  label: string;
+  type: string;
+  required: boolean;
+  placeholder: string;
+  options: string[];
+}
+
+export interface CalculatorDetail {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  fields: CalculatorField[];
+  notice: string;
+}
+
+export interface CalculatorListResult {
+  version: number;
+  total: number;
+  notice: string;
+  items: CalculatorSummary[];
+}
+
+export interface CalculatorLine {
+  label: string;
+  value: string;
+  amount?: number | null;
+}
+
+export interface CalculatorRunResult {
+  id: string;
+  name: string;
+  category: string;
+  total: number;
+  currency: string;
+  lines: CalculatorLine[];
+  formula: string;
+  notice: string;
+  warnings: string[];
+  inputs_used: Record<string, unknown>;
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;

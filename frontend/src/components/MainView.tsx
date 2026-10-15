@@ -17,6 +17,7 @@ import CasesSearchPanel from "./CasesSearchPanel";
 import ScenesCatalogPanel from "./ScenesCatalogPanel";
 import OpinionPanel from "./OpinionPanel";
 import TemplatesPanel from "./TemplatesPanel";
+import CalculatorsPanel from "./CalculatorsPanel";
 import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
@@ -34,6 +35,7 @@ type UserTab =
   | "cases"
   | "opinion"
   | "templates"
+  | "calculators"
   | "publish"
   | "my-leads";
 
@@ -213,6 +215,13 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               >
                 文书
               </button>
+              <button
+                type="button"
+                className={userTab === "calculators" ? "active" : ""}
+                onClick={() => setUserTab("calculators")}
+              >
+                计算器
+              </button>
               <button type="button" className={userTab === "publish" ? "active" : ""} onClick={() => setUserTab("publish")}>
                 发案源
               </button>
@@ -288,6 +297,11 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
             {userTab === "templates" && (
               <main className="chat-area lawyer-area">
                 <TemplatesPanel />
+              </main>
+            )}
+            {userTab === "calculators" && (
+              <main className="chat-area lawyer-area">
+                <CalculatorsPanel />
               </main>
             )}
             {userTab === "publish" && (
