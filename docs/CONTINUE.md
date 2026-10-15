@@ -20,7 +20,7 @@
   - `1d3f236` feat(m4.2): cases search API + case cards UI
   - `98ae214` feat(m4.3): 52-scene catalog placeholders
   - `3806cc1` feat(m5.1): legal opinion draft via RAG+LLM
-  - （本轮）feat(m5.2): document templates ×8
+  - `630d39a` feat(m5.2): document templates ×8
 
 ## 已确认产品决策（摘要）
 
