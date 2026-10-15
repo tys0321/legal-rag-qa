@@ -24,7 +24,18 @@ router = APIRouter(prefix="/api", tags=["lawyer"])
 CERT_DIR = PROJECT_ROOT / "data" / "lawyer_certs"
 
 
-def _to_out(user_id: int, profile: dict | None) -> LawyerProfileOut:
+def _to_out(user_id: int, profile: dict | None, *, is_admin: bool = False) -> LawyerProfileOut:
+    if is_admin:
+        return LawyerProfileOut(
+            user_id=user_id,
+            license_no=((profile or {}).get("license_no") or "ADMIN"),
+            region=((profile or {}).get("region") or "全域"),
+            specialties=list((profile or {}).get("specialties") or ["全部场景"]),
+            license_files=list((profile or {}).get("license_files") or []),
+            status="approved",
+            reject_reason="",
+            access="approved",
+        )
     if not profile:
         return LawyerProfileOut(user_id=user_id, status="none", access="none")
     return LawyerProfileOut(
@@ -41,7 +52,11 @@ def _to_out(user_id: int, profile: dict | None) -> LawyerProfileOut:
 
 @router.get("/lawyer/status", response_model=LawyerProfileOut)
 def lawyer_status(user: dict = Depends(get_current_user)) -> LawyerProfileOut:
-    return _to_out(user["id"], lawyer_repo.get_profile(user["id"]))
+    return _to_out(
+        user["id"],
+        lawyer_repo.get_profile(user["id"]),
+        is_admin=user.get("role") == "admin",
+    )
 
 
 @router.post("/lawyer/apply", response_model=LawyerProfileOut)

@@ -182,18 +182,18 @@ export default function AdminPanel() {
                 </span>
               </div>
               <div className="au-actions">
-                {u.role !== "admin" ? (
-                  <button className="btn-sm" onClick={() => void setRole(u, "admin")}>
-                    设为管理员
-                  </button>
+                {u.role === "admin" ? (
+                  <span className="au-meta">唯一管理员（不可改角色/删除）</span>
                 ) : (
-                  <button className="btn-sm" onClick={() => void setRole(u, "user")}>
-                    取消管理
-                  </button>
+                  <>
+                    <button className="btn-sm" onClick={() => void setRole(u, "user")}>
+                      设为普通用户
+                    </button>
+                    <button className="btn-sm btn-danger" onClick={() => void removeUser(u)}>
+                      删除
+                    </button>
+                  </>
                 )}
-                <button className="btn-sm btn-danger" onClick={() => void removeUser(u)}>
-                  删除
-                </button>
               </div>
             </div>
           ))}

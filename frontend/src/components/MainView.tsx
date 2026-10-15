@@ -111,7 +111,7 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
     }
   };
 
-  const readonlyLawyer = lawyer?.access === "pending_readonly";
+  const readonlyLawyer = !isAdmin && lawyer?.access === "pending_readonly";
 
   return (
     <div className="app theme-lawfirm">
@@ -187,7 +187,10 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
             <div className="banner">
               ⚠️ AI 生成内容仅供参考，不构成正式法律意见。律师办案请以现行法规与个案事实为准。
             </div>
-            <LawyerPanel readonlyMode={readonlyLawyer || lawyer?.access === "none"} />
+            <LawyerPanel
+              isAdmin={isAdmin}
+              readonlyMode={!isAdmin && (readonlyLawyer || lawyer?.access === "none")}
+            />
           </main>
         ) : (
           <>

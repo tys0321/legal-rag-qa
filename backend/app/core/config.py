@@ -18,6 +18,9 @@ class Settings:
         self.deepseek_base_url: str = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
         self.deepseek_chat_model: str = os.getenv("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
 
+        # 唯一超级管理员用户名（其余账号不得设为 admin）
+        self.sole_admin_username: str = os.getenv("SOLE_ADMIN_USERNAME", "tys")
+
         # MySQL（任务书硬性要求）
         self.mysql_host: str = os.getenv("MYSQL_HOST", "127.0.0.1")
         self.mysql_port: int = int(os.getenv("MYSQL_PORT", "3306"))

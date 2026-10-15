@@ -108,14 +108,23 @@ def list_pending() -> list[dict]:
     return out
 
 
+def is_admin_user(user_id: int) -> bool:
+    row = db.query_one("SELECT role FROM users WHERE id = ?", (user_id,))
+    return bool(row and row.get("role") == "admin")
+
+
 def can_use_lawyer_write(user_id: int) -> bool:
-    """认领/联系等写操作：仅 approved。"""
+    """认领/联系等写操作：管理员或已认证律师。"""
+    if is_admin_user(user_id):
+        return True
     p = get_profile(user_id)
     return bool(p and p.get("status") == "approved")
 
 
 def lawyer_mode_access(user_id: int) -> str:
-    """none | pending_readonly | approved | rejected。"""
+    """none | pending_readonly | approved | rejected。管理员直接 approved。"""
+    if is_admin_user(user_id):
+        return "approved"
     p = get_profile(user_id)
     if not p:
         return "none"
@@ -128,6 +137,8 @@ def lawyer_mode_access(user_id: int) -> str:
 
 
 def has_disclaimer_ack(user_id: int) -> bool:
+    if is_admin_user(user_id):
+        return True
     row = db.query_one("SELECT user_id FROM disclaimer_acks WHERE user_id = ?", (user_id,))
     return bool(row)
 

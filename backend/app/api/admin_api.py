@@ -78,14 +78,21 @@ def system_status(_: dict = Depends(require_admin)) -> SystemStatusResponse:
 
 @router.post("/users/{user_id}/set-role")
 def set_user_role(user_id: int, role: str, admin: dict = Depends(require_admin)) -> dict:
-    """设置用户角色（admin/user）。"""
+    """设置用户角色（仅允许 user / lawyer；不可再新增 admin）。"""
+    from app.core.config import settings
+
     if str(admin["id"]) == str(user_id):
         raise AppError("不能修改自己的角色", 400)
-    if role not in ("admin", "user"):
-        raise AppError("角色只能是 admin 或 user", 400)
-    target = db.query_one("SELECT username FROM users WHERE id = ?", (user_id,))
+    if role not in ("admin", "user", "lawyer"):
+        raise AppError("角色只能是 admin、user 或 lawyer", 400)
+    target = db.query_one("SELECT username, role FROM users WHERE id = ?", (user_id,))
     if not target:
         raise AppError("用户不存在", 404)
+    sole = settings.sole_admin_username
+    if target["username"] == sole:
+        raise AppError(f"不能修改唯一管理员「{sole}」的角色", 400)
+    if role == "admin":
+        raise AppError(f"系统仅保留「{sole}」为管理员，不可再授予他人 admin", 400)
     cur = db.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
     if cur.rowcount == 0:
         raise AppError("用户不存在", 404)
@@ -97,11 +104,15 @@ def set_user_role(user_id: int, role: str, admin: dict = Depends(require_admin))
 @router.post("/users/{user_id}/delete")
 def delete_user(user_id: int, admin: dict = Depends(require_admin)) -> dict:
     """删除用户（连带会话/消息/token）。"""
+    from app.core.config import settings
+
     if str(admin["id"]) == str(user_id):
         raise AppError("不能删除自己", 400)
     row = db.query_one("SELECT id, username FROM users WHERE id = ?", (user_id,))
     if not row:
         raise AppError("用户不存在", 404)
+    if row["username"] == settings.sole_admin_username:
+        raise AppError(f"不能删除唯一管理员「{settings.sole_admin_username}」", 400)
     db.execute("DELETE FROM tokens WHERE user_id = ?", (user_id,))
     db.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
     db.execute("DELETE FROM users WHERE id = ?", (user_id,))

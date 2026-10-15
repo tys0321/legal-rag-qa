@@ -8,11 +8,13 @@ import FirmPanel from "./FirmPanel";
 
 interface Props {
   readonlyMode: boolean;
+  /** 管理员免律师认证，直接全权限 */
+  isAdmin?: boolean;
 }
 
 type LawyerTab = "plaza" | "firm-leads" | "firm";
 
-export default function LawyerPanel({ readonlyMode }: Props) {
+export default function LawyerPanel({ readonlyMode, isAdmin = false }: Props) {
   const [profile, setProfile] = useState<LawyerProfile | null>(null);
   const [licenseNo, setLicenseNo] = useState("");
   const [region, setRegion] = useState("");
@@ -51,21 +53,28 @@ export default function LawyerPanel({ readonlyMode }: Props) {
     }
   };
 
-  const status = profile?.status || "none";
-  const canBrowse = status === "approved" || status === "pending";
+  const status = isAdmin ? "approved" : profile?.status || "none";
+  const canBrowse = isAdmin || status === "approved" || status === "pending";
+  const fullAccess = isAdmin || status === "approved";
+  const effectiveReadonly = isAdmin ? false : readonlyMode;
 
   return (
     <div className="lawyer-panel wide">
       <h2>律师版</h2>
-      {readonlyMode && (
+      {isAdmin && (
+        <div className="risk-banner warn inline" style={{ borderColor: "var(--gold)", color: "var(--text)" }}>
+          当前为<strong>管理员</strong>：无需律师认证，可使用案源认领、联系、律所等全部功能。
+        </div>
+      )}
+      {effectiveReadonly && (
         <div className="risk-banner warn inline">
           当前为<strong>待审只读</strong>：可浏览案源列表，不可认领或联系当事人。
         </div>
       )}
       <p className="muted">
-        认证状态：<strong>{status}</strong>
-        {profile?.reject_reason ? `（驳回原因：${profile.reject_reason}）` : ""}
-        {status === "approved" && (
+        认证状态：<strong>{isAdmin ? "管理员（免认证）" : status}</strong>
+        {!isAdmin && profile?.reject_reason ? `（驳回原因：${profile.reject_reason}）` : ""}
+        {fullAccess && !isAdmin && (
           <>
             {" "}
             · 擅长 {(profile?.specialties || []).join("、") || "未填"} · {profile?.region}
@@ -73,7 +82,7 @@ export default function LawyerPanel({ readonlyMode }: Props) {
         )}
       </p>
 
-      {status !== "approved" && (
+      {!isAdmin && status !== "approved" && (
         <div className="lawyer-form">
           <label>
             执业证号
@@ -107,9 +116,9 @@ export default function LawyerPanel({ readonlyMode }: Props) {
               轻量律所
             </button>
           </div>
-          {tab === "plaza" && <LeadPlaza readonlyMode={readonlyMode || status !== "approved"} scope="plaza" />}
-          {tab === "firm-leads" && <LeadPlaza readonlyMode={readonlyMode || status !== "approved"} scope="firm" />}
-          {tab === "firm" && <FirmPanel readonlyMode={readonlyMode || status !== "approved"} />}
+          {tab === "plaza" && <LeadPlaza readonlyMode={effectiveReadonly || !fullAccess} scope="plaza" />}
+          {tab === "firm-leads" && <LeadPlaza readonlyMode={effectiveReadonly || !fullAccess} scope="firm" />}
+          {tab === "firm" && <FirmPanel readonlyMode={effectiveReadonly || !fullAccess} />}
         </>
       )}
     </div>
