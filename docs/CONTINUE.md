@@ -13,7 +13,7 @@
   - `3806cc1` feat(m5.1): legal opinion draft via RAG+LLM
   - `630d39a` feat(m5.2): document templates ×8
   - `94d268c` feat(m5.3): legal calculators ×5
-  - （本轮）feat(m6): contract review placeholder + deploy/acceptance docs
+  - `fb6e898` feat(m6): contract review placeholder + deploy/acceptance docs
 
 ## 已确认产品决策（摘要）
 
