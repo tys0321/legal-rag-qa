@@ -72,27 +72,28 @@
 ## 快速开始
 
 ### 环境要求
-- Python 3.10+
+- Python 3.10+、Node.js 18+
 - DeepSeek API Key
+- Docker（可选，用于 MySQL / Qdrant / 全栈 Compose）
 
-### 安装与运行
+### 本机开发（摘要）
 
 ```bash
-# 克隆仓库
 git clone https://github.com/tys0321/legal-rag-qa.git
 cd legal-rag-qa
 
-# 安装依赖
-pip install -r requirements.txt
+# 基础设施
+docker compose -f deploy/docker-compose.yml up -d mysql qdrant
 
-# 配置环境变量
-export DEEPSEEK_API_KEY="your_api_key"
+# 配置 .env（DEEPSEEK_API_KEY / MySQL / 向量后端）后：
+cd backend && pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 
-# 启动应用
-streamlit run app.py
+# 另开终端
+cd frontend && npm install && npm run dev
 ```
 
-启动后访问 `http://localhost:8501`
+完整步骤、Compose 全栈端口与烟测清单见 **[docs/DEPLOY.md](docs/DEPLOY.md)**。
 
 ## 项目职责
 

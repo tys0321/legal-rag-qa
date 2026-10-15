@@ -311,6 +311,14 @@ export interface CalculatorRunResult {
   inputs_used: Record<string, unknown>;
 }
 
+/** 合同审查占位（M6 / P2） */
+export interface ContractReviewStatus {
+  available: boolean;
+  status: string;
+  message: string;
+  planned_features: string[];
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;

@@ -23,6 +23,7 @@ import type {
   CalculatorDetail,
   CalculatorListResult,
   CalculatorRunResult,
+  ContractReviewStatus,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -381,5 +382,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ inputs }),
     });
+  },
+
+  // ---- 合同审查占位（M6 / P2） ----
+  contractReviewStatus(): Promise<ContractReviewStatus> {
+    return request<ContractReviewStatus>("/api/contracts/review/status");
   },
 };
