@@ -1771,6 +1771,34 @@ code {
   font-family: ui-monospace, "Cascadia Code", "Sarasa Mono SC", Consolas, monospace;
 }
 
+/* ===== feedback ===== */
+.fb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.fb-label { font-size: 12px; color: var(--text-2); }
+.fb-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  color: var(--text-2);
+}
+.fb-btn:hover { border-color: var(--primary); color: var(--primary); }
+.fb-btn.active {
+  border-color: var(--primary);
+  background: #eef5ff;
+  color: var(--primary);
+  font-weight: 600;
+}
+.admin-badge.danger { background: #fde8e8; color: #b42318; }
+
 /* ===== M5.3: calculators ===== */
 .calc-total {
   display: flex;

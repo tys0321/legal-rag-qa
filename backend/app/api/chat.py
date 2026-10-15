@@ -5,7 +5,17 @@ from fastapi import APIRouter, Depends
 
 from app.core.auth import get_current_user
 from app.core.errors import AppError
-from app.schemas.chat import ChatRequest, ChatResponse, ClearSessionRequest, ClearSessionResponse, SlotNeedOut
+from app.repositories import feedbacks as feedback_repo
+from app.schemas.chat import (
+    ChatRequest,
+    ChatResponse,
+    ClearSessionRequest,
+    ClearSessionResponse,
+    FeedbackOut,
+    FeedbackRequest,
+    SlotNeedOut,
+)
+from app.services.audit import log_action
 from app.services.chat_service import get_chat_service
 
 router = APIRouter(prefix="/api", tags=["chat"])
@@ -18,7 +28,7 @@ def chat_endpoint(req: ChatRequest, user: dict = Depends(get_current_user)) -> C
         raise AppError("消息不能为空", 400)
 
     try:
-        result, sid = get_chat_service().ask(
+        result, sid, message_id = get_chat_service().ask(
             req.message,
             req.session_id,
             user["id"],
@@ -46,6 +56,35 @@ def chat_endpoint(req: ChatRequest, user: dict = Depends(get_current_user)) -> C
         scene=result.scene or "",
         need_slots=[SlotNeedOut(**s) for s in (result.need_slots or [])],
         waiting_for_slot=result.waiting_for_slot,
+        message_id=message_id,
+    )
+
+
+@router.post("/chat/{message_id}/feedback", response_model=FeedbackOut)
+def chat_feedback(
+    message_id: int,
+    req: FeedbackRequest,
+    user: dict = Depends(get_current_user),
+) -> FeedbackOut:
+    row = feedback_repo.upsert_feedback(
+        message_id=message_id,
+        user_id=user["id"],
+        rating=req.rating,
+        comment=req.comment,
+    )
+    log_action(
+        user["id"],
+        user["username"],
+        "chat_feedback",
+        f"message_id={message_id} rating={row.get('rating')}",
+    )
+    return FeedbackOut(
+        id=int(row["id"]),
+        message_id=int(row["message_id"]),
+        user_id=int(row["user_id"]),
+        rating=str(row["rating"]),
+        comment=str(row.get("comment") or ""),
+        created_at=str(row.get("created_at") or ""),
     )
 
 

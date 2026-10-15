@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "target_citation_hit_rate": 0.9,
+  "note": "七场景各 5 题；expected_laws 为检索命中标题应包含的关键词（子串匹配）。先跑检索命中率；--live 可走完整问答（需 API Key）。",
+  "items": [
+    {"id": "labor-01", "scene": "劳动用工", "question": "公司拖欠工资两个月，已经签了劳动合同，怎么维权？", "expected_laws": ["劳动合同法", "劳动争议"]},
+    {"id": "labor-02", "scene": "劳动用工", "question": "未签劳动合同工作满一年，能否主张二倍工资？", "expected_laws": ["劳动合同法"]},
+    {"id": "labor-03", "scene": "劳动用工", "question": "被公司违法解除劳动合同，能主张什么赔偿？", "expected_laws": ["劳动合同法"]},
+    {"id": "labor-04", "scene": "劳动用工", "question": "加班费怎么计算？休息日加班是否必须支付加班费？", "expected_laws": ["劳动法", "劳动合同法"]},
+    {"id": "labor-05", "scene": "劳动用工", "question": "工伤认定后，一次性伤残补助金大概怎么算？", "expected_laws": ["工伤保险"]},
+
+    {"id": "rent-01", "scene": "房屋租赁", "question": "租房押金房东拒不退还怎么办？", "expected_laws": ["民法典"]},
+    {"id": "rent-02", "scene": "房屋租赁", "question": "租客长期拖欠租金，房东能否解除合同？", "expected_laws": ["民法典"]},
+    {"id": "rent-03", "scene": "房屋租赁", "question": "转租未经房东同意是否有效？", "expected_laws": ["民法典"]},
+    {"id": "rent-04", "scene": "房屋租赁", "question": "房屋租赁合同没有约定租期怎么处理？", "expected_laws": ["民法典"]},
+    {"id": "rent-05", "scene": "房屋租赁", "question": "物业费该由业主还是承租人承担？", "expected_laws": ["民法典", "物业"]},
+
+    {"id": "marriage-01", "scene": "婚姻家事", "question": "协议离婚需要满足哪些条件？", "expected_laws": ["民法典"]},
+    {"id": "marriage-02", "scene": "婚姻家事", "question": "婚后买房登记一方名下，是否一定是夫妻共同财产？", "expected_laws": ["民法典"]},
+    {"id": "marriage-03", "scene": "婚姻家事", "question": "离婚时子女抚养权如何确定？", "expected_laws": ["民法典"]},
+    {"id": "marriage-04", "scene": "婚姻家事", "question": "家庭暴力能否申请人身安全保护令？", "expected_laws": ["反家庭暴力法", "民法典"]},
+    {"id": "marriage-05", "scene": "婚姻家事", "question": "离婚冷静期是怎么回事？", "expected_laws": ["民法典"]},
+
+    {"id": "traffic-01", "scene": "交通事故", "question": "交通事故对方全责，医疗费怎么主张？", "expected_laws": ["道路交通安全法", "民法典"]},
+    {"id": "traffic-02", "scene": "交通事故", "question": "交强险与商业三者险分别赔什么？", "expected_laws": ["道路交通安全法", "机动车"]},
+    {"id": "traffic-03", "scene": "交通事故", "question": "肇事逃逸要承担什么法律责任？", "expected_laws": ["道路交通安全法"]},
+    {"id": "traffic-04", "scene": "交通事故", "question": "行人闯红灯被撞，责任怎么划分？", "expected_laws": ["道路交通安全法"]},
+    {"id": "traffic-05", "scene": "交通事故", "question": "交通事故误工费需要哪些证据？", "expected_laws": ["民法典", "人身损害"]},
+
+    {"id": "consumer-01", "scene": "消费维权", "question": "网购假货能否主张惩罚性赔偿？", "expected_laws": ["消费者权益保护法", "食品安全法"]},
+    {"id": "consumer-02", "scene": "消费维权", "question": "七天无理由退货适用于哪些商品？", "expected_laws": ["消费者权益保护法", "电子商务法"]},
+    {"id": "consumer-03", "scene": "消费维权", "question": "预付卡商家跑路怎么维权？", "expected_laws": ["消费者权益保护法"]},
+    {"id": "consumer-04", "scene": "消费维权", "question": "虚假宣传如何投诉？", "expected_laws": ["广告法", "消费者权益保护法"]},
+    {"id": "consumer-05", "scene": "消费维权", "question": "网购商品损坏，平台和商家谁负责？", "expected_laws": ["电子商务法", "消费者权益保护法"]},
+
+    {"id": "admin-01", "scene": "行政诉讼", "question": "对行政处罚不服，复议和诉讼时效分别多久？", "expected_laws": ["行政复议法", "行政诉讼法"]},
+    {"id": "admin-02", "scene": "行政诉讼", "question": "哪些行政行为可以提起行政诉讼？", "expected_laws": ["行政诉讼法"]},
+    {"id": "admin-03", "scene": "行政诉讼", "question": "政府信息公开申请被拒绝怎么办？", "expected_laws": ["政府信息公开", "行政诉讼法"]},
+    {"id": "admin-04", "scene": "行政诉讼", "question": "行政复议前置的情形有哪些？", "expected_laws": ["行政复议法", "行政诉讼法"]},
+    {"id": "admin-05", "scene": "行政诉讼", "question": "行政强制执行前是否必须催告？", "expected_laws": ["行政强制法"]},
+
+    {"id": "contract-01", "scene": "合同纠纷", "question": "对方违约，守约方可以主张哪些救济？", "expected_laws": ["民法典"]},
+    {"id": "contract-02", "scene": "合同纠纷", "question": "违约金过高能否请求调整？", "expected_laws": ["民法典"]},
+    {"id": "contract-03", "scene": "合同纠纷", "question": "合同解除的法定条件有哪些？", "expected_laws": ["民法典"]},
+    {"id": "contract-04", "scene": "合同纠纷", "question": "格式条款无效的常见情形？", "expected_laws": ["民法典"]},
+    {"id": "contract-05", "scene": "合同纠纷", "question": "买卖合同质量不符如何主张权利？", "expected_laws": ["民法典"]}
+  ]
+}

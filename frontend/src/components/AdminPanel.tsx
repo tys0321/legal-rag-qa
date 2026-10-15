@@ -6,6 +6,7 @@ import type {
   AdminLogItem,
   AdminStats,
   AdminUserItem,
+  FeedbackItem,
   LawyerProfile,
   SnapshotItem,
   SystemStatus,
@@ -16,22 +17,27 @@ export default function AdminPanel() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [pendingLawyers, setPendingLawyers] = useState<LawyerProfile[]>([]);
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [fbStats, setFbStats] = useState({ total: 0, useful: 0, useless: 0 });
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const [u, s, st, lw] = await Promise.all([
+      const [u, s, st, lw, fb] = await Promise.all([
         api.adminUsers(),
         api.adminStats(),
         api.adminStatus(),
         api.adminLawyerPending().catch(() => ({ items: [] as LawyerProfile[] })),
+        api.adminFeedbacks(50).catch(() => ({ total: 0, useful: 0, useless: 0, items: [] as FeedbackItem[] })),
       ]);
       setUsers(u.users);
       setStats(s);
       setStatus(st);
       setPendingLawyers(lw.items || []);
+      setFeedbacks(fb.items || []);
+      setFbStats({ total: fb.total, useful: fb.useful, useless: fb.useless });
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     }
@@ -207,6 +213,35 @@ export default function AdminPanel() {
           </div>
         </div>
       )}
+
+      <div className="admin-section">
+        <h3>
+          💬 消息反馈（{fbStats.total} · 有用 {fbStats.useful} / 无用 {fbStats.useless}）
+        </h3>
+        {feedbacks.length === 0 ? (
+          <div className="bk-empty">暂无反馈</div>
+        ) : (
+          <div className="admin-users">
+            {feedbacks.map((f) => (
+              <div className="admin-user" key={f.id}>
+                <div className="au-info">
+                  <span className="au-name">
+                    {f.username}
+                    <span className={`admin-badge ${f.rating === "useful" ? "" : "danger"}`}>
+                      {f.rating === "useful" ? "有用" : "无用"}
+                    </span>
+                  </span>
+                  <span className="au-meta">
+                    msg#{f.message_id} · {f.created_at}
+                    {f.comment ? ` · ${f.comment}` : ""}
+                  </span>
+                  <span className="au-meta">{f.message_preview}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <BackupPanel />
 

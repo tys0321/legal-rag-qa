@@ -55,6 +55,21 @@ class ChatResponse(BaseModel):
     scene: str = ""
     need_slots: list[SlotNeedOut] = []
     waiting_for_slot: bool = False
+    message_id: int | None = Field(None, description="助手消息 ID，用于反馈")
+
+
+class FeedbackRequest(BaseModel):
+    rating: str = Field(..., description="useful | useless")
+    comment: str = Field("", max_length=500)
+
+
+class FeedbackOut(BaseModel):
+    id: int
+    message_id: int
+    user_id: int
+    rating: str
+    comment: str = ""
+    created_at: str = ""
 
 
 class ClearSessionRequest(BaseModel):

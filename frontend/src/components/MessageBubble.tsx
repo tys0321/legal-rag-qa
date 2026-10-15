@@ -1,12 +1,14 @@
 // 单条消息气泡：用户/助手，含快慢路径徽标与引用来源
 
 import { useState } from "react";
+import { api } from "../api/client";
 import type { ChatMessage, RelatedCase, Source } from "../api/types";
 
 interface BubbleProps {
   message: ChatMessage;
   onSwitchLawyer?: () => void;
   onPublishLead?: (scene?: string) => void;
+  onFeedback?: (messageId: number, rating: "useful" | "useless") => void;
 }
 
 function escHtml(s: string): string {
@@ -98,8 +100,33 @@ function renderBlock(text: string): string {
   return out.join("");
 }
 
-export default function MessageBubble({ message, onSwitchLawyer, onPublishLead }: BubbleProps) {
+export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, onFeedback }: BubbleProps) {
   const [expanded, setExpanded] = useState(false);
+  const [fbBusy, setFbBusy] = useState(false);
+  const [localFb, setLocalFb] = useState<"useful" | "useless" | null>(message.feedback ?? null);
+
+  const submitFeedback = async (rating: "useful" | "useless") => {
+    if (!message.messageId || fbBusy) return;
+    setFbBusy(true);
+    try {
+      await api.sendFeedback(message.messageId, rating);
+      setLocalFb(rating);
+      onFeedback?.(message.messageId, rating);
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { message: rating === "useful" ? "已标记有用" : "已标记无用", type: "success" },
+        }),
+      );
+    } catch (e) {
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { message: e instanceof Error ? e.message : "反馈失败", type: "error" },
+        }),
+      );
+    } finally {
+      setFbBusy(false);
+    }
+  };
 
   if (message.role === "user") {
     return (
@@ -165,6 +192,27 @@ export default function MessageBubble({ message, onSwitchLawyer, onPublishLead }
             {expanded && sources.length > 0 && <SourceList sources={sources} />}
             {message.relatedCases && message.relatedCases.length > 0 && (
               <RelatedCases cases={message.relatedCases} />
+            )}
+            {message.messageId && !message.error && (
+              <div className="fb-row">
+                <span className="fb-label">这条回答</span>
+                <button
+                  type="button"
+                  className={`fb-btn ${localFb === "useful" ? "active" : ""}`}
+                  disabled={fbBusy}
+                  onClick={() => void submitFeedback("useful")}
+                >
+                  有用
+                </button>
+                <button
+                  type="button"
+                  className={`fb-btn ${localFb === "useless" ? "active" : ""}`}
+                  disabled={fbBusy}
+                  onClick={() => void submitFeedback("useless")}
+                >
+                  无用
+                </button>
+              </div>
             )}
           </>
         )}

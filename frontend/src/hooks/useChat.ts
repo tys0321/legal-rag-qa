@@ -49,6 +49,8 @@ export function useChat(): ChatController {
           riskBanner: resp.risk_banner,
           forceLawyerCta: resp.force_lawyer_cta,
           scene: resp.scene,
+          messageId: resp.message_id ?? null,
+          feedback: null,
         };
         setMessages((prev) => [...prev, aiMsg]);
         // 通知侧边栏刷新会话列表
@@ -72,10 +74,16 @@ export function useChat(): ChatController {
     setBusy(true);
     try {
       const data = await api.sessionMessages(sessionId);
-      const loaded = (data.messages ?? []).map((m) => ({
-        ...m,
-        id: m.id ?? nextId(),
-      }));
+      const loaded = (data.messages ?? []).map((m) => {
+        const rawId = (m as { id?: number | string }).id;
+        const numericId = typeof rawId === "number" ? rawId : Number(rawId);
+        return {
+          ...m,
+          id: rawId != null ? String(rawId) : nextId(),
+          messageId: Number.isFinite(numericId) ? numericId : null,
+          feedback: null,
+        } as ChatMessage;
+      });
       setMessages(loaded);
       setActiveSessionId(sessionId);
     } catch {

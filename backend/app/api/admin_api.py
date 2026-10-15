@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from app.core.auth import require_admin
 from app.core.errors import AppError
 from app.repositories import database as db
+from app.repositories import feedbacks as feedback_repo
 from app.repositories import users as user_repo
 from app.repositories.vector_store import get_store
 from app.schemas.admin import (
@@ -14,6 +15,7 @@ from app.schemas.admin import (
     SystemStatusResponse,
     UserStatsResponse,
 )
+from app.schemas.feedback import FeedbackAdminItem, FeedbackAdminList
 from app.services.audit import log_action
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -166,3 +168,21 @@ def admin_logs(limit: int = 100, _: dict = Depends(require_admin)):
     from app.services.audit import list_logs
 
     return {"logs": list_logs(min(max(limit, 1), 500))}
+
+
+# ---------- 消息反馈 ----------
+@router.get("/feedbacks", response_model=FeedbackAdminList)
+def admin_feedbacks(
+    limit: int = 100,
+    rating: str | None = None,
+    _: dict = Depends(require_admin),
+) -> FeedbackAdminList:
+    """用户对助手回复的有用/无用反馈。"""
+    stats = feedback_repo.feedback_stats()
+    items = feedback_repo.list_feedbacks(limit=limit, rating=rating or None)
+    return FeedbackAdminList(
+        total=stats["total"],
+        useful=stats["useful"],
+        useless=stats["useless"],
+        items=[FeedbackAdminItem(**x) for x in items],
+    )

@@ -26,7 +26,7 @@ class ChatService:
         *,
         scene: str | None = None,
         skip_slots: bool = False,
-    ) -> tuple[RagResult, str]:
+    ) -> tuple[RagResult, str, int | None]:
         message = message.strip()
         sid = session_id
         history: list[dict] = []
@@ -37,6 +37,10 @@ class ChatService:
             history = self.sessions.messages(sid, user_id)
         else:
             sid = self.sessions.create(user_id, first_message=message)
+
+        def _persist(result: RagResult) -> int | None:
+            self.sessions.append(sid, "user", message, user_id)
+            return self.sessions.append(sid, "assistant", result.answer, user_id)
 
         # ---- 风险分级 ----
         risk = classify_risk(message)
@@ -52,9 +56,8 @@ class ChatService:
                 risk_banner=risk.banner,
                 force_lawyer_cta=risk.force_lawyer_cta,
             )
-            self.sessions.append(sid, "user", message, user_id)
-            self.sessions.append(sid, "assistant", result.answer, user_id)
-            return result, sid
+            mid = _persist(result)
+            return result, sid, mid
 
         # ---- 槽位引导 ----
         state = slot_svc.get_session_slots(sid)
@@ -86,9 +89,8 @@ class ChatService:
                         need_slots=[{"key": m["key"], "prompt": m["prompt"]} for m in missing],
                         waiting_for_slot=True,
                     )
-                    self.sessions.append(sid, "user", message, user_id)
-                    self.sessions.append(sid, "assistant", result.answer, user_id)
-                    return result, sid
+                    mid = _persist(result)
+                    return result, sid, mid
 
         # ---- 正常 / L2 RAG ----
         enriched = message
@@ -109,9 +111,8 @@ class ChatService:
         result.need_slots = []
         result.waiting_for_slot = False
 
-        self.sessions.append(sid, "user", message, user_id)
-        self.sessions.append(sid, "assistant", result.answer, user_id)
-        return result, sid
+        mid = _persist(result)
+        return result, sid, mid
 
     def list(self, user_id: int) -> list[dict]:
         return self.sessions.list_sessions(user_id)

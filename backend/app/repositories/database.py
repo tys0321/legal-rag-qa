@@ -149,6 +149,20 @@ CREATE TABLE IF NOT EXISTS firm_members (
     CONSTRAINT fk_fm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_fm_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS message_feedbacks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    message_id INT NOT NULL,
+    user_id INT NOT NULL,
+    rating VARCHAR(16) NOT NULL,
+    comment VARCHAR(500) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_feedback_msg_user (message_id, user_id),
+    CONSTRAINT fk_feedback_message FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE,
+    CONSTRAINT fk_feedback_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_feedback_rating (rating),
+    INDEX idx_feedback_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 

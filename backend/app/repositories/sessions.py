@@ -52,21 +52,22 @@ class SessionStore:
         if not sess:
             return []
         rows = db.query(
-            "SELECT role, content FROM messages WHERE session_id = ? ORDER BY id",
+            "SELECT id, role, content FROM messages WHERE session_id = ? ORDER BY id",
             (sid,),
         )
         return [dict(r) for r in rows]
 
-    def append(self, sid: str, role: str, content: str, user_id: int | None = None) -> None:
-        """写入一条消息并更新会话时间。"""
+    def append(self, sid: str, role: str, content: str, user_id: int | None = None) -> int | None:
+        """写入一条消息并更新会话时间，返回 message id。"""
         sess = self.get(sid, user_id)
         if not sess:
-            return
-        db.execute(
+            return None
+        cur = db.execute(
             "INSERT INTO messages (session_id, role, content) VALUES (?, ?, ?)",
             (sid, role, content),
         )
         db.execute("UPDATE sessions SET updated_at = NOW() WHERE id = ?", (sid,))
+        return int(cur.lastrowid) if cur is not None and cur.lastrowid else None
 
     def rename(self, sid: str, title: str, user_id: int) -> bool:
         row = self.get(sid, user_id)

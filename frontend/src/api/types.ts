@@ -42,6 +42,7 @@ export interface ChatResponse {
   scene?: string;
   need_slots?: { key: string; prompt: string }[];
   waiting_for_slot?: boolean;
+  message_id?: number | null;
 }
 
 /** 对话请求 */
@@ -390,6 +391,28 @@ export interface ChatMessage {
   forceLawyerCta?: boolean;
   scene?: string;
   error?: boolean;
+  /** 后端 messages.id，用于有用/无用反馈 */
+  messageId?: number | null;
+  feedback?: "useful" | "useless" | null;
+}
+
+export interface FeedbackItem {
+  id: number;
+  message_id: number;
+  user_id: number;
+  username: string;
+  rating: string;
+  comment: string;
+  created_at: string;
+  message_preview: string;
+  session_id: string;
+}
+
+export interface FeedbackListResult {
+  total: number;
+  useful: number;
+  useless: number;
+  items: FeedbackItem[];
 }
 
 /** 管理后台 */

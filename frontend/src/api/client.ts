@@ -9,6 +9,7 @@ import type {
   ChatResponse,
   ChatMessage,
   DocumentItem,
+  FeedbackListResult,
   FirmInfo,
   CaseSearchResult,
   LawSearchResult,
@@ -133,6 +134,21 @@ export const api = {
       method: "POST",
       body: JSON.stringify(req),
     });
+  },
+  sendFeedback(
+    messageId: number,
+    rating: "useful" | "useless",
+    comment = "",
+  ): Promise<{ id: number; message_id: number; rating: string }> {
+    return request(`/api/chat/${messageId}/feedback`, {
+      method: "POST",
+      body: JSON.stringify({ rating, comment }),
+    });
+  },
+  adminFeedbacks(limit = 100, rating?: string): Promise<FeedbackListResult> {
+    const q = new URLSearchParams({ limit: String(limit) });
+    if (rating) q.set("rating", rating);
+    return request<FeedbackListResult>(`/api/admin/feedbacks?${q}`);
   },
 
   // ---- 会话 ----
