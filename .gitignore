@@ -17,6 +17,13 @@ frontend/node_modules/
 frontend/dist/
 frontend/*.tsbuildinfo
 
+# 里程碑交付说明、验收与交接备忘（只留本机，不进远程）
+docs/*交付说明.md
+docs/M7.1-烟测与评测.md
+docs/M7.2-词面检索兜底.md
+docs/CONTINUE.md
+docs/M6-验收清单.md
+
 # 日志与临时文件
 *.log
 .DS_Store
