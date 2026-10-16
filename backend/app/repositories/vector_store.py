@@ -158,10 +158,15 @@ class VectorStore:
     # ---------- 检索 ----------
     def search_dense(self, query: str, top_k: int = 20, min_score: float = 0.0) -> list[dict]:
         """纯稠密向量检索（供混合检索通道使用）。"""
+        from app.services.embeddings import is_embedder_ready
+
         self.load()
-        if not self._vectors:
+        if not self._vectors or not is_embedder_ready():
             return []
-        q = np.asarray(embed_query(query), dtype=np.float32)
+        try:
+            q = np.asarray(embed_query(query), dtype=np.float32)
+        except Exception:  # noqa: BLE001 — 模型缺失时跳过稠密通道
+            return []
         q = q / (np.linalg.norm(q) + 1e-9)
         mat = np.array(self._vectors, dtype=np.float32)
         norms = np.linalg.norm(mat, axis=1, keepdims=True) + 1e-9
@@ -205,11 +210,15 @@ class VectorStore:
 
         案例特征：类别为「司法解释」，或标题含 案例/批复/答复/决定/判例/指导案例 等。
         """
-        self.load()
-        if not self._vectors:
-            return []
+        from app.services.embeddings import is_embedder_ready
 
-        q = np.asarray(embed_query(query), dtype=np.float32)
+        self.load()
+        if not self._vectors or not is_embedder_ready():
+            return []
+        try:
+            q = np.asarray(embed_query(query), dtype=np.float32)
+        except Exception:  # noqa: BLE001
+            return []
         q = q / (np.linalg.norm(q) + 1e-9)
         mat = np.array(self._vectors, dtype=np.float32)
         norms = np.linalg.norm(mat, axis=1, keepdims=True) + 1e-9

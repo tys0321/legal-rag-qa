@@ -51,18 +51,27 @@ def hybrid_search(query: str, top_k: int | None = None, min_score: float | None 
     store = get_store()
     store.load()
     if not store._vectors:  # noqa: SLF001 — 与仓库内部状态同步
-        return []
+        # 向量库未入库时：词面扫描 data/kb（含 eval_core），保证演示可用
+        from app.services.lexical_kb import lexical_search
+
+        return lexical_search(query, top_k=top_k)
 
     # 条款精确
     article_hits = store._search_by_article(query, top_k=candidate_k)  # noqa: SLF001
 
-    # 稠密：多取候选，不过滤过严（融合后再截）
+    # 稠密：无本地嵌入模型时跳过，避免下载重试卡死
     dense_hits = store.search_dense(query, top_k=candidate_k, min_score=max(0.0, min_score - 0.1))
 
     # BM25
     bm25 = get_bm25_index()
     bm25.rebuild_if_needed(store._ids, store._metas)  # noqa: SLF001
     bm25_hits = bm25.search(query, top_k=candidate_k)
+
+    # 仅有元数据、稠密不可用且 BM25/条款也无命中时，词面兜底
+    if not article_hits and not dense_hits and not bm25_hits:
+        from app.services.lexical_kb import lexical_search
+
+        return lexical_search(query, top_k=top_k)
 
     fused = _rrf_fuse(
         [article_hits, dense_hits, bm25_hits],

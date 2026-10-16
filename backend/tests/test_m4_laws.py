@@ -53,6 +53,7 @@ def test_laws_search_hybrid_mocked(client: TestClient) -> None:
         with patch("app.api.search_api.get_store") as gs:
             store = gs.return_value
             store.load.return_value = None
+            store.stats.return_value = {"chunk_count": 10}
             resp = client.get("/api/laws/search", params={"q": "拖欠工资", "top_k": 5})
     assert resp.status_code == 200, resp.text
     body = resp.json()

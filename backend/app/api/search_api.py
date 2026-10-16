@@ -8,6 +8,7 @@ from app.core.errors import AppError
 from app.repositories.vector_store import get_store
 from app.schemas.search import CaseHitOut, CaseSearchOut, LawHitOut, LawSearchOut
 from app.services.hybrid_retrieve import hybrid_search
+from app.services.lexical_kb import lexical_search
 
 router = APIRouter(prefix="/api", tags=["search"])
 
@@ -46,7 +47,16 @@ def search_laws(
 
     store = get_store()
     store.load()
-    hits = hybrid_search(query, top_k=top_k)
+    backend = "hybrid"
+    try:
+        hits = hybrid_search(query, top_k=top_k) if store.stats().get("chunk_count", 0) else []
+    except Exception:  # noqa: BLE001
+        hits = []
+    if hits and hits[0].get("match") == "lexical":
+        backend = "lexical"
+    elif not hits:
+        hits = lexical_search(query, top_k=top_k)
+        backend = "lexical"
     items = [
         LawHitOut(
             id=h.get("id") or "",
@@ -67,7 +77,7 @@ def search_laws(
         )
         for h in hits
     ]
-    return LawSearchOut(query=query, backend="hybrid", total=len(items), items=items)
+    return LawSearchOut(query=query, backend=backend, total=len(items), items=items)
 
 
 @router.get("/cases/search", response_model=CaseSearchOut)
