@@ -179,24 +179,24 @@ def delete_user(user_id: int, admin: dict = Depends(require_perm("users"))) -> d
     return {"ok": True}
 
 
-# ---------- 版本快照 ----------
+# ---------- 数据备份（运行数据；代码版本用 Git） ----------
 @router.post("/backup/create")
 def backup_create(description: str = "", admin: dict = Depends(require_perm("backups"))):
-    """创建版本快照。"""
+    """创建数据备份。"""
     from app.services.backup import create_snapshot
 
     try:
         result = create_snapshot(description)
         log_action(admin["id"], admin["username"], "backup_create",
-                   f"创建快照 {result['name']} ({result['size_mb']} MB)")
+                   f"创建数据备份 {result['name']} ({result['size_mb']} MB)")
         return result
     except Exception as exc:  # noqa: BLE001
-        raise AppError(f"创建快照失败: {exc}", 500) from exc
+        raise AppError(f"创建数据备份失败: {exc}", 500) from exc
 
 
 @router.get("/backup/list")
 def backup_list(_: dict = Depends(require_perm("backups"))):
-    """列出全部快照。"""
+    """列出全部数据备份。"""
     from app.services.backup import list_snapshots
 
     return {"snapshots": list_snapshots()}
@@ -204,13 +204,13 @@ def backup_list(_: dict = Depends(require_perm("backups"))):
 
 @router.post("/backup/{name}/restore")
 def backup_restore(name: str, admin: dict = Depends(require_perm("backups"))):
-    """恢复快照。"""
+    """恢复数据备份。"""
     from app.services.backup import restore_snapshot
 
     try:
         result = restore_snapshot(name)
         log_action(admin["id"], admin["username"], "backup_restore",
-                   f"恢复快照 {name}（{result['count']} 个文件）")
+                   f"恢复数据备份 {name}（{result['count']} 个文件）")
         return result
     except FileNotFoundError as exc:
         raise AppError(str(exc), 404) from exc
@@ -220,13 +220,13 @@ def backup_restore(name: str, admin: dict = Depends(require_perm("backups"))):
 
 @router.delete("/backup/{name}")
 def backup_delete(name: str, admin: dict = Depends(require_perm("backups"))):
-    """删除快照。"""
+    """删除数据备份。"""
     from app.services.backup import delete_snapshot
 
     ok = delete_snapshot(name)
     if not ok:
-        raise AppError("快照不存在", 404)
-    log_action(admin["id"], admin["username"], "backup_delete", f"删除快照 {name}")
+        raise AppError("数据备份不存在", 404)
+    log_action(admin["id"], admin["username"], "backup_delete", f"删除数据备份 {name}")
     return {"ok": True}
 
 

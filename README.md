@@ -41,7 +41,7 @@
 ### 管理后台
 - **数据看板**：用户数、会话数、消息数、文档数、检索块数一目了然
 - **用户管理**：搜索、角色分配、用户删除
-- **版本快照**：一键备份/恢复整个系统数据（类游戏存档机制）
+- **数据备份**：备份并恢复用户、会话与知识库索引。代码发版用 Git
 - **操作日志**：完整记录所有管理操作
 
 ## 技术架构
@@ -103,7 +103,7 @@ cd frontend && npm install && npm run dev
 2. **数据采集**：编写爬虫采集 377 部现行法律法规文本
 3. **RAG 搭建**：设计文档切片策略，基于 Dify 搭建检索增强生成流程
 4. **产品设计**：设计引用溯源、多轮对话、风险兜底等交互逻辑
-5. **全栈开发**：独立完成前端界面、用户系统、管理后台、版本管理
+5. **全栈开发**：独立完成前端界面、用户系统、管理后台、数据备份
 6. **质量保障**：编写 pytest 测试用例，API 恢复验证
 
 ## 目录结构
@@ -132,8 +132,8 @@ legal-rag-qa/
 ### 管理后台（数据看板 & 用户管理）
 ![管理后台](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/03-admin.png)
 
-### 版本快照 & 操作日志
-![版本管理](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/04-version.png)
+### 数据备份 & 操作日志
+![数据备份](screenshots/04-version.png)
 
 ### 高保真原型设计稿
 ![高保真原型](https://raw.githubusercontent.com/tys0321/legal-rag-qa/main/screenshots/05-prototype.png)

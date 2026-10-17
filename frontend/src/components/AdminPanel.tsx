@@ -870,7 +870,7 @@ function BackupPanel() {
     try {
       const r = await api.backupRestore(s.name);
       setMsgType("ok");
-      setMsg(`已恢复到该版本（还原 ${r.count} 个文件）`);
+      setMsg(`已恢复该备份（还原 ${r.count} 个文件）`);
       await refresh();
     } catch (err) {
       setMsgType("err");
@@ -1073,7 +1073,7 @@ function BackupPanel() {
   );
 }
 
-/** 操作日志：追踪管理操作（删用户/改角色/快照等） */
+/** 操作日志：追踪管理操作（删用户/改角色/数据备份等） */
 function LogsPanel() {
   const [logs, setLogs] = useState<AdminLogItem[]>([]);
 
