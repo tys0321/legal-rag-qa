@@ -234,6 +234,9 @@ def init_db() -> None:
                 cur.execute("SHOW COLUMNS FROM users LIKE 'firm_id'")
                 if not cur.fetchone():
                     cur.execute("ALTER TABLE users ADD COLUMN firm_id INT NULL")
+                cur.execute("SHOW COLUMNS FROM users LIKE 'admin_perms'")
+                if not cur.fetchone():
+                    cur.execute("ALTER TABLE users ADD COLUMN admin_perms JSON NULL")
                 cur.execute("SHOW COLUMNS FROM messages LIKE 'meta_json'")
                 if not cur.fetchone():
                     cur.execute("ALTER TABLE messages ADD COLUMN meta_json JSON NULL")

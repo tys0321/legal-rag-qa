@@ -1,4 +1,4 @@
-"""确保仅 tys 为管理员。"""
+"""确保 tys 仍是根管理员。不再降权其他已授权管理员。"""
 from __future__ import annotations
 
 import sys
@@ -19,11 +19,7 @@ def main() -> None:
     if not u:
         raise SystemExit(f"账号不存在: {sole}")
     db.execute("UPDATE users SET role = 'admin' WHERE username = ?", (sole,))
-    cur = db.execute(
-        "UPDATE users SET role = 'user' WHERE role = 'admin' AND username <> ?",
-        (sole,),
-    )
-    print(f"sole_admin={sole} demoted_others={cur.rowcount}")
+    print(f"root_admin={sole} kept; other admins are not demoted")
     rows = db.query("SELECT id, username, role FROM users WHERE role = 'admin'")
     print("admins=", [dict(r) for r in rows])
 

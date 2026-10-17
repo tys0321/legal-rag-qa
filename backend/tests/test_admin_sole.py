@@ -1,4 +1,4 @@
-"""唯一管理员 tys：免律师认证 + 不可再授予他人 admin。"""
+"""根管理员 tys：可授予/撤销次级管理员，并限制其权限。"""
 from __future__ import annotations
 
 import uuid
@@ -20,6 +20,11 @@ def client() -> TestClient:
     app.dependency_overrides.clear()
 
 
+def _as(user: dict) -> None:
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[require_admin] = lambda: user
+
+
 def test_admin_skips_lawyer_cert() -> None:
     try:
         db.init_db()
@@ -34,7 +39,7 @@ def test_admin_skips_lawyer_cert() -> None:
     assert lawyer_repo.has_disclaimer_ack(u["id"]) is True
 
 
-def test_cannot_grant_other_admin(client: TestClient) -> None:
+def test_tys_grant_and_revoke_admin(client: TestClient) -> None:
     try:
         db.init_db()
     except Exception:
@@ -45,20 +50,37 @@ def test_cannot_grant_other_admin(client: TestClient) -> None:
         sole = user_repo.create_user("tys", "pass1234")
         assert sole
     db.execute("UPDATE users SET role = 'admin' WHERE username = 'tys'")
+    sole = user_repo.get_user_by_username("tys")
+    assert sole
 
     other = user_repo.create_user(f"u_{uuid.uuid4().hex[:8]}", "pass1234")
     assert other
+    _as({"id": sole["id"], "username": "tys", "role": "admin"})
 
-    app.dependency_overrides[get_current_user] = lambda: {
-        "id": sole["id"],
-        "username": "tys",
-        "role": "admin",
-    }
-    app.dependency_overrides[require_admin] = lambda: {
-        "id": sole["id"],
-        "username": "tys",
-        "role": "admin",
-    }
-    resp = client.post(f"/api/admin/users/{other['id']}/set-role?role=admin", json={})
-    assert resp.status_code == 400
-    assert "tys" in resp.json().get("error", "")
+    granted = client.post(
+        f"/api/admin/users/{other['id']}/set-role?role=admin",
+        json={"permissions": ["feedbacks", "logs"]},
+    )
+    assert granted.status_code == 200, granted.text
+    row = db.query_one("SELECT role, admin_perms FROM users WHERE id = ?", (other["id"],))
+    assert row["role"] == "admin"
+    assert "feedbacks" in str(row["admin_perms"])
+
+    third = user_repo.create_user(f"u_{uuid.uuid4().hex[:8]}", "pass1234")
+    assert third
+    # 次级管理员不能再授权，也不能看未分配的用户管理
+    _as({"id": other["id"], "username": other["username"], "role": "admin", "admin_perms": ["feedbacks", "logs"]})
+    denied = client.post(
+        f"/api/admin/users/{third['id']}/set-role?role=admin",
+        json={"permissions": ["logs"]},
+    )
+    assert denied.status_code == 403
+    users = client.get("/api/admin/users")
+    assert users.status_code == 403
+
+    _as({"id": sole["id"], "username": "tys", "role": "admin"})
+    revoked = client.post(f"/api/admin/users/{other['id']}/set-role?role=user", json={})
+    assert revoked.status_code == 200, revoked.text
+    again = db.query_one("SELECT role, admin_perms FROM users WHERE id = ?", (other["id"],))
+    assert again["role"] == "user"
+    assert not again["admin_perms"]

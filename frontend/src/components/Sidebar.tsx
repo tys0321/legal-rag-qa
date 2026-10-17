@@ -1,8 +1,7 @@
-// 左侧常驻侧边栏：对话历史 + 知识库管理两个区域
+// 左侧常驻侧边栏：对话历史（知识库已迁入管理后台）
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { api } from "../api/client";
-import { useDocuments } from "../hooks/useDocuments";
 import type { SessionItem } from "../api/types";
 
 interface Props {
@@ -30,8 +29,6 @@ export default function Sidebar({
   onAdminClick,
   adminActive = false,
 }: Props) {
-  const [tab, setTab] = useState<"chats" | "kb">("chats");
-
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -39,32 +36,13 @@ export default function Sidebar({
         <span className="sidebar-title">法律知识问答</span>
       </div>
 
-      <div className="sidebar-tabs">
-        <button
-          className={`sidebar-tab ${tab === "chats" ? "active" : ""}`}
-          onClick={() => setTab("chats")}
-        >
-          💬 对话
-        </button>
-        <button
-          className={`sidebar-tab ${tab === "kb" ? "active" : ""}`}
-          onClick={() => setTab("kb")}
-        >
-          📚 知识库
-        </button>
-      </div>
-
-      {tab === "chats" ? (
-        <ChatsTab
-          sessions={sessions}
-          activeId={activeId}
-          onSelect={onSelectSession}
-          onNew={onNewSession}
-          onDelete={onDeleteSession}
-        />
-      ) : (
-        <KbTab />
-      )}
+      <ChatsTab
+        sessions={sessions}
+        activeId={activeId}
+        onSelect={onSelectSession}
+        onNew={onNewSession}
+        onDelete={onDeleteSession}
+      />
 
       <div className="sidebar-user">
         <span className="user-avatar">👤</span>
@@ -158,10 +136,14 @@ function ChatsTab({
       {manage && sessions.length > 0 && (
         <div className="manage-bar">
           <label className="manage-all">
-            <input type="checkbox" checked={selected.size === sessions.length} onChange={toggleAll} />
+            <input
+              type="checkbox"
+              checked={selected.size === sessions.length}
+              onChange={toggleAll}
+            />
             全选
           </label>
-          <span className="manage-count">已选 {selected.size} 项</span>
+          <span className="manage-count">已选 {selected.size} 个</span>
           <button
             className="manage-delete"
             disabled={selected.size === 0}
@@ -217,86 +199,6 @@ function ChatsTab({
       </div>
     </div>
   );
-}
-
-function KbTab() {
-  const { documents, loading, uploading, error, refresh, upload, remove } = useDocuments();
-  const [toast, setToast] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const res = await upload(file);
-    setToast(res.message);
-    setTimeout(() => setToast(null), 4000);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  return (
-    <div className="sidebar-body kb-body">
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".docx,.pdf,.txt,.md"
-        hidden
-        onChange={onFile}
-      />
-      <button
-        className="btn-upload"
-        disabled={uploading}
-        onClick={() => fileRef.current?.click()}
-      >
-        {uploading ? "上传解析中…" : "⬆ 上传文档"}
-      </button>
-      <div className="kb-hint">支持 docx / pdf / txt / md，扫描件自动 OCR</div>
-
-      {toast && <div className="kb-toast">{toast}</div>}
-      {error && <div className="err-text">{error}</div>}
-
-      <div className="kb-count">共 {documents.length} 篇文档</div>
-      <div className="kb-list">
-        {documents.slice(0, 200).map((d) => (
-          <div className="kb-item" key={d.doc_id}>
-            <div className="kb-info">
-              <div className="kb-title" title={d.title}>
-                {d.title}
-              </div>
-              <div className="kb-meta">
-                {d.category} · {d.chunks} 块
-                {d.effective_status && d.effective_status !== "现行有效" && (
-                  <span className={`src-tag st-${statusCls(d.effective_status)}`}>
-                    {d.effective_status}
-                  </span>
-                )}
-              </div>
-            </div>
-            <button
-              className="chat-item-del"
-              title="删除文档"
-              onClick={() => {
-                if (confirm(`确定从知识库删除「${d.title}」？`)) void remove(d.doc_id);
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        {documents.length === 0 && !loading && (
-          <div className="sidebar-empty">暂无文档</div>
-        )}
-      </div>
-      <button className="btn-refresh" onClick={refresh} disabled={loading}>
-        {loading ? "刷新中…" : "🔄 刷新列表"}
-      </button>
-    </div>
-  );
-}
-
-function statusCls(status: string): string {
-  if (status === "已废止") return "repealed";
-  if (status === "已修订") return "revised";
-  return "partial";
 }
 
 function formatTime(iso: string): string {

@@ -330,6 +330,7 @@ export interface LawyerProfile {
   status: string;
   reject_reason: string;
   access: string;
+  reviewed_at?: string;
 }
 
 /** 会话条目 */
@@ -416,6 +417,17 @@ export interface FeedbackListResult {
 }
 
 /** 管理后台 */
+export interface AdminPermItem {
+  key: string;
+  label: string;
+}
+
+export interface AdminAccess {
+  is_root: boolean;
+  permissions: string[];
+  catalog: AdminPermItem[];
+}
+
 export interface AdminUserItem {
   id: number;
   username: string;
@@ -423,6 +435,8 @@ export interface AdminUserItem {
   created_at: string;
   session_count: number;
   message_count: number;
+  permissions?: string[];
+  is_root?: boolean;
 }
 
 export interface AdminStats {
@@ -443,7 +457,7 @@ export interface SystemStatus {
   kb_source: string;
 }
 
-/** 版本快照 */
+/** 数据备份快照（业务数据，非 Git） */
 export interface SnapshotItem {
   name: string;
   description: string;

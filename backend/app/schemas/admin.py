@@ -4,6 +4,21 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
+class AdminPermItem(BaseModel):
+    key: str
+    label: str
+
+
+class AdminAccessResponse(BaseModel):
+    is_root: bool
+    permissions: list[str]
+    catalog: list[AdminPermItem]
+
+
+class SetRoleRequest(BaseModel):
+    permissions: list[str] = []
+
+
 class AdminUserItem(BaseModel):
     id: int
     username: str
@@ -11,6 +26,8 @@ class AdminUserItem(BaseModel):
     created_at: str
     session_count: int = 0
     message_count: int = 0
+    permissions: list[str] = []
+    is_root: bool = False
 
 
 class AdminUserListResponse(BaseModel):

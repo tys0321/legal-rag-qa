@@ -1,8 +1,9 @@
-"""知识库管理路由（瘦路由）：文档列表 / 统计 / 后台入库 / 上传 / 删除。"""
+"""知识库管理路由：列表 / 统计 / 入库 / 上传 / 删除（仅管理员）。"""
 from __future__ import annotations
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 
+from app.core.admin_perms import require_perm
 from app.core.errors import AppError
 from app.schemas.document import (
     DeleteRequest,
@@ -14,13 +15,14 @@ from app.schemas.document import (
     StatsResponse,
     UploadResponse,
 )
+from app.services.audit import log_action
 from app.services.document_service import get_document_service
 
 router = APIRouter(prefix="/api", tags=["documents"])
 
 
 @router.get("/documents", response_model=DocumentListResponse)
-def list_documents() -> DocumentListResponse:
+def list_documents(_: dict = Depends(require_perm("kb"))) -> DocumentListResponse:
     try:
         docs = get_document_service().list_documents()
     except Exception as exc:  # noqa: BLE001
@@ -29,7 +31,7 @@ def list_documents() -> DocumentListResponse:
 
 
 @router.get("/stats", response_model=StatsResponse)
-def stats() -> StatsResponse:
+def stats(_: dict = Depends(require_perm("kb"))) -> StatsResponse:
     try:
         data = get_document_service().stats()
     except Exception as exc:  # noqa: BLE001
@@ -42,13 +44,20 @@ def stats() -> StatsResponse:
 
 
 @router.post("/ingest", response_model=IngestResponse)
-def ingest_endpoint(req: IngestRequest) -> IngestResponse:
+def ingest_endpoint(
+    req: IngestRequest,
+    admin: dict = Depends(require_perm("kb")),
+) -> IngestResponse:
     note = get_document_service().start_ingest(limit=req.limit, category=req.category)
+    log_action(admin["id"], admin["username"], "kb_ingest", note)
     return IngestResponse(started=True, note=note)
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_endpoint(file: UploadFile = File(...)) -> UploadResponse:
+async def upload_endpoint(
+    file: UploadFile = File(...),
+    admin: dict = Depends(require_perm("kb")),
+) -> UploadResponse:
     """上传单个文档并入库。支持 docx/pdf/txt/md。"""
     content = await file.read()
     if not content:
@@ -56,6 +65,12 @@ async def upload_endpoint(file: UploadFile = File(...)) -> UploadResponse:
     result = get_document_service().upload_file(file.filename or "upload.bin", content)
     if "error" in result:
         raise AppError(result["error"], 400)
+    log_action(
+        admin["id"],
+        admin["username"],
+        "kb_upload",
+        f"{result.get('title') or file.filename} chunks={result.get('chunks_added', 0)}",
+    )
     return UploadResponse(
         ok=True,
         doc_id=result.get("doc_id"),
@@ -69,9 +84,13 @@ async def upload_endpoint(file: UploadFile = File(...)) -> UploadResponse:
 
 
 @router.post("/delete", response_model=DeleteResponse)
-def delete_endpoint(req: DeleteRequest) -> DeleteResponse:
+def delete_endpoint(
+    req: DeleteRequest,
+    admin: dict = Depends(require_perm("kb")),
+) -> DeleteResponse:
     try:
         removed = get_document_service().delete_document(req.doc_id)
     except Exception as exc:  # noqa: BLE001
         raise AppError(f"删除失败: {exc}", 500) from exc
+    log_action(admin["id"], admin["username"], "kb_delete", f"doc_id={req.doc_id} removed={removed}")
     return DeleteResponse(ok=True, removed_chunks=removed)

@@ -12,6 +12,7 @@ class LawyerApplyRequest(BaseModel):
 
 class LawyerProfileOut(BaseModel):
     user_id: int
+    username: str = ""
     license_no: str = ""
     region: str = ""
     specialties: list[str] = []
@@ -19,11 +20,16 @@ class LawyerProfileOut(BaseModel):
     status: str = "none"
     reject_reason: str = ""
     access: str = "none"  # none|pending_readonly|approved|rejected
+    reviewed_at: str = ""
 
 
 class LawyerReviewRequest(BaseModel):
     approve: bool
     reason: str = ""
+
+
+class LawyerRevokeRequest(BaseModel):
+    reason: str = "管理员撤销认证"
 
 
 class DisclaimerStatusOut(BaseModel):

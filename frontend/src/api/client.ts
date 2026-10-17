@@ -1,6 +1,7 @@
 // API 客户端：封装与后端的所有交互（带鉴权 token）
 
 import type {
+  AdminAccess,
   AdminLogItem,
   AdminStats,
   AdminUserItem,
@@ -196,6 +197,9 @@ export const api = {
   },
 
   // ---- 管理后台（admin only） ----
+  adminAccess(): Promise<AdminAccess> {
+    return request<AdminAccess>("/api/admin/access");
+  },
   adminUsers(): Promise<{ users: AdminUserItem[] }> {
     return request<{ users: AdminUserItem[] }>("/api/admin/users");
   },
@@ -205,10 +209,10 @@ export const api = {
   adminStatus(): Promise<SystemStatus> {
     return request<SystemStatus>("/api/admin/status");
   },
-  adminSetRole(userId: number, role: string): Promise<{ ok: boolean }> {
+  adminSetRole(userId: number, role: string, permissions: string[] = []): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/api/admin/users/${userId}/set-role?role=${role}`, {
       method: "POST",
-      body: JSON.stringify({}),
+      body: JSON.stringify({ permissions }),
     });
   },
   adminDeleteUser(userId: number): Promise<{ ok: boolean }> {
@@ -221,7 +225,7 @@ export const api = {
     return request<{ logs: AdminLogItem[] }>(`/api/admin/logs?limit=${limit}`);
   },
 
-  // ---- 版本快照 ----
+  // ---- 数据备份（运行数据；代码版本用 Git） ----
   backupCreate(description: string): Promise<SnapshotItem> {
     return request<SnapshotItem>(
       `/api/admin/backup/create?description=${encodeURIComponent(description)}`,
@@ -255,14 +259,49 @@ export const api = {
       body: JSON.stringify(body),
     });
   },
+  lawyerApply(form: FormData): Promise<LawyerProfile> {
+    return request<LawyerProfile>("/api/lawyer/apply", {
+      method: "POST",
+      body: form,
+    });
+  },
   adminLawyerPending(): Promise<{ items: LawyerProfile[] }> {
     return request<{ items: LawyerProfile[] }>("/api/admin/lawyer/pending");
+  },
+  adminLawyerApproved(): Promise<{ items: LawyerProfile[] }> {
+    return request<{ items: LawyerProfile[] }>("/api/admin/lawyer/approved");
   },
   adminLawyerReview(userId: number, approve: boolean, reason = ""): Promise<LawyerProfile> {
     return request<LawyerProfile>(`/api/admin/lawyer/${userId}/review`, {
       method: "POST",
       body: JSON.stringify({ approve, reason }),
     });
+  },
+  adminLawyerRevoke(userId: number, reason = "管理员撤销认证"): Promise<LawyerProfile> {
+    return request<LawyerProfile>(`/api/admin/lawyer/${userId}/revoke`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+  async adminLawyerFile(userId: number, filename: string): Promise<Blob> {
+    const token = tokenStore.get();
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const resp = await fetch(
+      `${BASE}/api/admin/lawyer/${userId}/files/${encodeURIComponent(filename)}`,
+      { headers },
+    );
+    if (!resp.ok) {
+      let msg = `HTTP ${resp.status}`;
+      try {
+        const body = await resp.json();
+        msg = body.error || body.detail || msg;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    return resp.blob();
   },
   disclaimerStatus(): Promise<{ acked: boolean }> {
     return request<{ acked: boolean }>("/api/disclaimer/status");

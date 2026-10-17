@@ -89,6 +89,19 @@ def review(user_id: int, *, approve: bool, reviewer_id: int, reason: str = "") -
     return get_profile(user_id)
 
 
+def _rows_to_profiles(rows: list) -> list[dict]:
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["license_files"] = _parse_json(d.pop("license_files_json", None), [])
+        d["specialties"] = _parse_json(d.pop("specialties_json", None), [])
+        reviewed = d.get("reviewed_at")
+        if reviewed is not None and not isinstance(reviewed, str):
+            d["reviewed_at"] = str(reviewed)
+        out.append(d)
+    return out
+
+
 def list_pending() -> list[dict]:
     rows = db.query(
         """
@@ -99,13 +112,36 @@ def list_pending() -> list[dict]:
         ORDER BY p.updated_at DESC
         """
     )
-    out = []
-    for r in rows:
-        d = dict(r)
-        d["license_files"] = _parse_json(d.pop("license_files_json", None), [])
-        d["specialties"] = _parse_json(d.pop("specialties_json", None), [])
-        out.append(d)
-    return out
+    return _rows_to_profiles(rows)
+
+
+def list_by_status(status: str) -> list[dict]:
+    if status not in VALID_STATUS or status == "none":
+        return []
+    rows = db.query(
+        """
+        SELECT p.*, u.username
+        FROM lawyer_profiles p
+        JOIN users u ON u.id = p.user_id
+        WHERE p.status = ?
+        ORDER BY COALESCE(p.reviewed_at, p.updated_at) DESC
+        """,
+        (status,),
+    )
+    return _rows_to_profiles(rows)
+
+
+def revoke_approval(user_id: int, *, reviewer_id: int, reason: str = "") -> dict | None:
+    """撤销已通过的律师认证，降回普通用户。"""
+    profile = get_profile(user_id)
+    if not profile or profile.get("status") != "approved":
+        return None
+    return review(
+        user_id,
+        approve=False,
+        reviewer_id=reviewer_id,
+        reason=reason.strip() or "管理员撤销认证",
+    )
 
 
 def is_admin_user(user_id: int) -> bool:

@@ -1,12 +1,15 @@
 """律师认证 / 免责确认 API。"""
 from __future__ import annotations
 
+import mimetypes
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.responses import FileResponse
 
-from app.core.auth import get_current_user, require_admin
+from app.core.admin_perms import require_perm
+from app.core.auth import get_current_user
 from app.core.config import PROJECT_ROOT
 from app.core.errors import AppError
 from app.repositories import lawyers as lawyer_repo
@@ -16,6 +19,7 @@ from app.schemas.lawyer import (
     LawyerApplyRequest,
     LawyerProfileOut,
     LawyerReviewRequest,
+    LawyerRevokeRequest,
 )
 from app.services.audit import log_action
 
@@ -28,6 +32,7 @@ def _to_out(user_id: int, profile: dict | None, *, is_admin: bool = False) -> La
     if is_admin:
         return LawyerProfileOut(
             user_id=user_id,
+            username=((profile or {}).get("username") or ""),
             license_no=((profile or {}).get("license_no") or "ADMIN"),
             region=((profile or {}).get("region") or "全域"),
             specialties=list((profile or {}).get("specialties") or ["全部场景"]),
@@ -35,11 +40,13 @@ def _to_out(user_id: int, profile: dict | None, *, is_admin: bool = False) -> La
             status="approved",
             reject_reason="",
             access="approved",
+            reviewed_at=str((profile or {}).get("reviewed_at") or ""),
         )
     if not profile:
         return LawyerProfileOut(user_id=user_id, status="none", access="none")
     return LawyerProfileOut(
         user_id=user_id,
+        username=profile.get("username") or "",
         license_no=profile.get("license_no") or "",
         region=profile.get("region") or "",
         specialties=list(profile.get("specialties") or []),
@@ -47,6 +54,23 @@ def _to_out(user_id: int, profile: dict | None, *, is_admin: bool = False) -> La
         status=profile.get("status") or "none",
         reject_reason=profile.get("reject_reason") or "",
         access=lawyer_repo.lawyer_mode_access(user_id),
+        reviewed_at=str(profile.get("reviewed_at") or ""),
+    )
+
+
+def _item_out(row: dict) -> LawyerProfileOut:
+    uid = int(row["user_id"])
+    return LawyerProfileOut(
+        user_id=uid,
+        username=row.get("username") or "",
+        license_no=row.get("license_no") or "",
+        region=row.get("region") or "",
+        specialties=list(row.get("specialties") or []),
+        license_files=list(row.get("license_files") or []),
+        status=row.get("status") or "none",
+        reject_reason=row.get("reject_reason") or "",
+        access=lawyer_repo.lawyer_mode_access(uid),
+        reviewed_at=str(row.get("reviewed_at") or ""),
     )
 
 
@@ -132,15 +156,43 @@ def lawyer_apply_json(
 
 
 @router.get("/admin/lawyer/pending")
-def admin_pending(_: dict = Depends(require_admin)) -> dict:
-    return {"items": lawyer_repo.list_pending()}
+def admin_pending(_: dict = Depends(require_perm("lawyers"))) -> dict:
+    return {"items": [_item_out(r) for r in lawyer_repo.list_pending()]}
+
+
+@router.get("/admin/lawyer/approved")
+def admin_approved(_: dict = Depends(require_perm("lawyers"))) -> dict:
+    return {"items": [_item_out(r) for r in lawyer_repo.list_by_status("approved")]}
+
+
+@router.get("/admin/lawyer/{user_id}/files/{filename}")
+def admin_lawyer_file(
+    user_id: int,
+    filename: str,
+    _: dict = Depends(require_perm("lawyers")),
+) -> FileResponse:
+    """管理员查看律师上传的执业证材料。"""
+    safe = Path(filename).name
+    if safe != filename or ".." in filename or "/" in filename or "\\" in filename:
+        raise AppError("非法文件名", 400)
+    profile = lawyer_repo.get_profile(user_id)
+    if not profile:
+        raise AppError("未找到该律师申请", 404)
+    files = list(profile.get("license_files") or [])
+    if safe not in files:
+        raise AppError("该申请下没有此文件", 404)
+    path = CERT_DIR / safe
+    if not path.is_file():
+        raise AppError("文件已丢失，请让申请人重新上传", 404)
+    media, _ = mimetypes.guess_type(str(path))
+    return FileResponse(path, media_type=media or "application/octet-stream", filename=safe)
 
 
 @router.post("/admin/lawyer/{user_id}/review", response_model=LawyerProfileOut)
 def admin_review(
     user_id: int,
     req: LawyerReviewRequest,
-    admin: dict = Depends(require_admin),
+    admin: dict = Depends(require_perm("lawyers")),
 ) -> LawyerProfileOut:
     profile = lawyer_repo.review(
         user_id, approve=req.approve, reviewer_id=admin["id"], reason=req.reason
@@ -152,6 +204,27 @@ def admin_review(
         admin["username"],
         "lawyer_review",
         f"user={user_id} approve={req.approve}",
+    )
+    return _to_out(user_id, profile)
+
+
+@router.post("/admin/lawyer/{user_id}/revoke", response_model=LawyerProfileOut)
+def admin_revoke(
+    user_id: int,
+    req: LawyerRevokeRequest | None = None,
+    admin: dict = Depends(require_perm("lawyers")),
+) -> LawyerProfileOut:
+    reason = (req.reason if req else "") or "管理员撤销认证"
+    profile = lawyer_repo.revoke_approval(
+        user_id, reviewer_id=admin["id"], reason=reason
+    )
+    if not profile:
+        raise AppError("只能撤销已通过认证的律师", 400)
+    log_action(
+        admin["id"],
+        admin["username"],
+        "lawyer_revoke",
+        f"user={user_id} reason={reason}",
     )
     return _to_out(user_id, profile)
 

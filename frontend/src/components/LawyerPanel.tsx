@@ -1,6 +1,6 @@
 // 律师认证 + 案源广场 / 所内案源 / 轻量律所
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import type { LawyerProfile } from "../api/types";
 import LeadPlaza from "./LeadPlaza";
@@ -19,9 +19,11 @@ export default function LawyerPanel({ readonlyMode, isAdmin = false }: Props) {
   const [licenseNo, setLicenseNo] = useState("");
   const [region, setRegion] = useState("");
   const [specialties, setSpecialties] = useState("劳动用工,合同纠纷");
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [tab, setTab] = useState<LawyerTab>("plaza");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => {
     api.lawyerStatus().then(setProfile).catch(() => undefined);
@@ -39,13 +41,30 @@ export default function LawyerPanel({ readonlyMode, isAdmin = false }: Props) {
         .split(/[,，]/)
         .map((s) => s.trim())
         .filter(Boolean);
-      const p = await api.lawyerApplyJson({
-        license_no: licenseNo,
-        region,
-        specialties: specs,
-      });
+      const hadFiles = files.length > 0;
+      let p: LawyerProfile;
+      if (hadFiles) {
+        const form = new FormData();
+        form.append("license_no", licenseNo.trim());
+        form.append("region", region.trim());
+        form.append("specialties", JSON.stringify(specs));
+        for (const f of files) form.append("files", f);
+        p = await api.lawyerApply(form);
+      } else {
+        p = await api.lawyerApplyJson({
+          license_no: licenseNo,
+          region,
+          specialties: specs,
+        });
+      }
       setProfile(p);
-      setMsg("已提交，等待管理员审核。审核前律师版为只读。");
+      setFiles([]);
+      if (fileRef.current) fileRef.current.value = "";
+      setMsg(
+        hadFiles || (p.license_files || []).length > 0
+          ? "已提交材料，等待管理员审核。审核前律师版为只读。"
+          : "已提交（未附证照文件），等待管理员审核。建议补传执业证照片/PDF。",
+      );
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "提交失败");
     } finally {
@@ -96,6 +115,19 @@ export default function LawyerPanel({ readonlyMode, isAdmin = false }: Props) {
             擅长领域（逗号分隔）
             <input value={specialties} onChange={(e) => setSpecialties(e.target.value)} />
           </label>
+          <label>
+            执业证材料（jpg / png / pdf，可多选）
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.pdf,.webp"
+              multiple
+              onChange={(e) => setFiles(Array.from(e.target.files || []))}
+            />
+          </label>
+          {files.length > 0 && (
+            <p className="field-hint">已选 {files.length} 个文件：{files.map((f) => f.name).join("、")}</p>
+          )}
           <button className="btn-primary" type="button" disabled={busy || !licenseNo || !region} onClick={() => void submit()}>
             {busy ? "提交中…" : "提交认证申请"}
           </button>
