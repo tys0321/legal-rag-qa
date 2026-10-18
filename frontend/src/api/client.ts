@@ -25,7 +25,10 @@ import type {
   CalculatorDetail,
   CalculatorListResult,
   CalculatorRunResult,
+  ContractReviewResult,
   ContractReviewStatus,
+  UserRecordDetail,
+  UserRecordItem,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -439,8 +442,53 @@ export const api = {
     });
   },
 
-  // ---- 合同审查占位（M6 / P2） ----
+  // ---- 合同审查 ----
   contractReviewStatus(): Promise<ContractReviewStatus> {
     return request<ContractReviewStatus>("/api/contracts/review/status");
+  },
+  contractReview(body: { title?: string; text: string; focus?: string }): Promise<ContractReviewResult> {
+    return request<ContractReviewResult>("/api/contracts/review", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  listRecords(kind: "template" | "calculator" | "contract"): Promise<{ items: UserRecordItem[] }> {
+    return request<{ items: UserRecordItem[] }>(`/api/records?kind=${kind}`);
+  },
+  getRecord(id: number): Promise<UserRecordDetail> {
+    return request<UserRecordDetail>(`/api/records/${id}`);
+  },
+  deleteRecord(id: number): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/api/records/${id}`, { method: "DELETE" });
+  },
+
+  async downloadExport(title: string, markdown: string, format: "docx" | "pdf"): Promise<void> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = tokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const resp = await fetch("/api/export", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ title, markdown, format }),
+    });
+    if (!resp.ok) {
+      let detail = `导出失败（HTTP ${resp.status}）`;
+      try {
+        const body = await resp.json();
+        detail = body.error || body.detail || detail;
+      } catch {
+        /* 二进制错误体 */
+      }
+      throw new Error(detail);
+    }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const safe = (title || "导出文档").replace(/[\\/:*?"<>|]/g, "").slice(0, 80) || "导出文档";
+    a.href = url;
+    a.download = `${safe}.${format === "pdf" ? "pdf" : "docx"}`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };

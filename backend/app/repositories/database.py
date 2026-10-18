@@ -163,6 +163,17 @@ CREATE TABLE IF NOT EXISTS message_feedbacks (
     INDEX idx_feedback_rating (rating),
     INDEX idx_feedback_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    kind VARCHAR(32) NOT NULL,
+    title VARCHAR(200) NOT NULL DEFAULT '',
+    summary VARCHAR(500) NOT NULL DEFAULT '',
+    payload_json JSON NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_records_user_kind (user_id, kind, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 
@@ -325,6 +336,7 @@ def dump_tables() -> dict[str, list[dict]]:
         "firm_members",
         "leads",
         "lead_events",
+        "user_records",
     ]
     out: dict[str, list[dict]] = {}
     for t in tables:

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { TemplateDetail, TemplateFillResult, TemplateSummary } from "../api/types";
+import WorkHistory from "./WorkHistory";
+import ExportButtons from "./ExportButtons";
 
 export default function TemplatesPanel() {
   const [items, setItems] = useState<TemplateSummary[]>([]);
@@ -13,6 +15,7 @@ export default function TemplatesPanel() {
   const [result, setResult] = useState<TemplateFillResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     api
@@ -61,6 +64,7 @@ export default function TemplatesPanel() {
     try {
       const res = await api.fillTemplate(selectedId, values);
       setResult(res);
+      setTick((n) => n + 1);
       if (res.missing_required?.length) {
         window.dispatchEvent(
           new CustomEvent("app:toast", {
@@ -96,6 +100,7 @@ export default function TemplatesPanel() {
       <p className="muted">
         首批 8 种常用文书：表单填槽后生成可复制 Markdown。水印：{watermark || "AI 生成草稿，须律师审核"}。
       </p>
+      <WorkHistory kind="template" tick={tick} onOpen={(payload) => setResult(payload as unknown as TemplateFillResult)} />
 
       <div className="template-picker">
         {items.map((t) => (
@@ -158,6 +163,7 @@ export default function TemplatesPanel() {
             <button type="button" className="btn-gold" onClick={() => void copyMd()}>
               复制 Markdown
             </button>
+            <ExportButtons title={result.name || "文书草稿"} markdown={result.markdown} />
           </div>
         </div>
       )}

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { CalculatorDetail, CalculatorRunResult, CalculatorSummary } from "../api/types";
+import WorkHistory from "./WorkHistory";
+import ExportButtons from "./ExportButtons";
 
 export default function CalculatorsPanel() {
   const [items, setItems] = useState<CalculatorSummary[]>([]);
@@ -13,6 +15,7 @@ export default function CalculatorsPanel() {
   const [result, setResult] = useState<CalculatorRunResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     api
@@ -70,6 +73,7 @@ export default function CalculatorsPanel() {
       }
       const res = await api.runCalculator(selectedId, inputs);
       setResult(res);
+      setTick((n) => n + 1);
     } catch (e) {
       setResult(null);
       setErr(e instanceof Error ? e.message : "计算失败");
@@ -84,6 +88,7 @@ export default function CalculatorsPanel() {
       <p className="muted">
         首批 5 类：诉讼费、民间借贷利息、工伤简版、交通事故医疗费、加班费。结果区强制标注估算仅供参考。
       </p>
+      <WorkHistory kind="calculator" tick={tick} onOpen={(payload) => setResult(payload as unknown as CalculatorRunResult)} />
 
       <div className="template-picker">
         {items.map((c) => (
@@ -165,6 +170,19 @@ export default function CalculatorsPanel() {
               ))}
             </ul>
           )}
+          <ExportButtons
+            title={result.name || "计算估算"}
+            markdown={[
+              `# ${result.name}`,
+              "",
+              `估算合计：¥ ${result.total.toFixed(2)}`,
+              result.formula ? `公式：${result.formula}` : "",
+              "",
+              ...result.lines.map((line) => `- ${line.label}：${line.value}`),
+              "",
+              result.notice || notice || "估算仅供参考",
+            ].join("\n")}
+          />
         </div>
       )}
     </div>

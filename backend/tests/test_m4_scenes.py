@@ -26,9 +26,9 @@ def test_catalog_has_52_and_7_mvp() -> None:
     catalog_svc.reload_catalog()
     data = catalog_svc.catalog_summary()
     assert data["total"] == 52
-    assert data["active_count"] == 7
-    assert data["coming_soon_count"] == 45
-    assert len(data["mvp_ids"]) == 7
+    assert data["active_count"] == 52
+    assert data["coming_soon_count"] == 0
+    assert len(data["mvp_ids"]) == 52
     assert "劳动用工" in data["mvp_ids"]
     ids = [x["id"] for x in data["items"]]
     assert len(ids) == len(set(ids))
@@ -39,9 +39,9 @@ def test_scenes_api(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["total"] == 52
-    assert body["active_count"] == 7
+    assert body["active_count"] == 52
     coming = [x for x in body["items"] if x["status"] == "coming_soon"]
-    assert len(coming) == 45
+    assert coming == []
     assert all(x["name"] for x in body["items"])
 
 
@@ -49,7 +49,7 @@ def test_scenes_api_filter_active(client: TestClient) -> None:
     resp = client.get("/api/scenes", params={"status": "active"})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["total"] == 7
+    assert body["total"] == 52
     assert all(x["status"] == "active" for x in body["items"])
 
 

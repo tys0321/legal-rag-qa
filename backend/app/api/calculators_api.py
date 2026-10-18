@@ -13,6 +13,7 @@ from app.schemas.calculator import (
 )
 from app.services.audit import log_action
 from app.services import calculators as calc
+from app.services.user_records import save_record
 
 router = APIRouter(prefix="/api", tags=["calculators"])
 
@@ -46,5 +47,12 @@ def run_calculator(
         user["username"],
         "calculator_run",
         f"id={calc_id} total={result['total']}",
+    )
+    save_record(
+        int(user["id"]),
+        "calculator",
+        str(result.get("name") or calc_id),
+        f"合计 {result['total']}",
+        result,
     )
     return CalculatorRunOut(**result)

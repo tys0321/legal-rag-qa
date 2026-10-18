@@ -320,6 +320,37 @@ export interface ContractReviewStatus {
   planned_features: string[];
 }
 
+export interface UserRecordItem {
+  id: number;
+  kind: string;
+  title: string;
+  summary: string;
+  created_at: string;
+}
+
+export interface UserRecordDetail extends UserRecordItem {
+  payload: Record<string, unknown>;
+}
+
+export interface ContractReviewResult {
+  available: boolean;
+  status: string;
+  blocked: boolean;
+  message: string;
+  title: string;
+  focus: string;
+  findings: string[];
+  markdown: string;
+  sources: Array<{
+    id: string;
+    title: string;
+    article?: string;
+    text?: string;
+  }>;
+  watermark: string;
+  disclaimer: string;
+}
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;

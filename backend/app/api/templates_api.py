@@ -13,6 +13,7 @@ from app.schemas.template import (
 )
 from app.services.audit import log_action
 from app.services import templates as tpl
+from app.services.user_records import save_record
 
 router = APIRouter(prefix="/api", tags=["templates"])
 
@@ -49,5 +50,12 @@ def fill_document_template(
         user["username"],
         "template_fill",
         f"id={template_id} missing={len(result['missing_required'])}",
+    )
+    save_record(
+        int(user["id"]),
+        "template",
+        str(result.get("name") or template_id),
+        "已生成文书草稿",
+        result,
     )
     return TemplateFillOut(**result)

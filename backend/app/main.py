@@ -23,6 +23,8 @@ from app.api.sessions_api import router as sessions_router
 from app.api.templates_api import router as templates_router
 from app.api.calculators_api import router as calculators_router
 from app.api.contracts_api import router as contracts_router
+from app.api.records_api import router as records_router
+from app.api.export_api import router as export_router
 from app.core.config import settings
 from app.core.errors import AppError
 from app.core.logging import setup_logging
@@ -66,6 +68,8 @@ app.include_router(opinions_router)
 app.include_router(templates_router)
 app.include_router(calculators_router)
 app.include_router(contracts_router)
+app.include_router(records_router)
+app.include_router(export_router)
 
 
 @app.get("/api/health")

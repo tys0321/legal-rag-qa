@@ -40,8 +40,8 @@ export default function ScenesCatalogPanel({ onPickActive }: Props) {
     <div className="lead-panel scenes-catalog">
       <h2>场景分类</h2>
       <p className="muted">
-        对标 <strong>52</strong> 一级分类信息架构：当前开放{" "}
-        <strong>{data?.active_count ?? 7}</strong> 类（MVP），其余「即将开放」占位。
+        对标 <strong>52</strong> 一级分类：当前已开放{" "}
+        <strong>{data?.active_count ?? 52}</strong> 类，点击即可进入对应咨询。
       </p>
       {err && <p className="form-msg error">{err}</p>}
       {data && (

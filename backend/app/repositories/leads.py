@@ -22,7 +22,7 @@ _TRANSITIONS: dict[str, set[str]] = {
 }
 
 def _active_scene_ids() -> set[str]:
-    """案源发布仅接受 MVP 已激活场景（与 scenes_catalog 对齐）。"""
+    """案源发布接受目录中已开放的场景。"""
     try:
         from app.services.scenes_catalog import mvp_ids
 
