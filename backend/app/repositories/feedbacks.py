@@ -60,38 +60,71 @@ def upsert_feedback(
     return dict(row) if row else {"id": fid, "message_id": message_id, "rating": rating}
 
 
+def _question_before(session_id: str, message_id: int) -> str:
+    """取该助手回复之前最近一条用户提问。"""
+    row = db.query_one(
+        """
+        SELECT content FROM messages
+        WHERE session_id = ? AND role = 'user' AND id < ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (session_id, message_id),
+    )
+    return str(row["content"]) if row and row.get("content") is not None else ""
+
+
 def list_feedbacks(*, limit: int = 100, rating: str | None = None) -> list[dict]:
     limit = max(1, min(int(limit or 100), 500))
+    sql = """
+        SELECT f.id, f.message_id, f.user_id, u.username, f.rating, f.comment,
+               f.created_at, LEFT(m.content, 160) AS message_preview, s.id AS session_id
+        FROM message_feedbacks f
+        JOIN users u ON u.id = f.user_id
+        JOIN messages m ON m.id = f.message_id
+        JOIN sessions s ON s.id = m.session_id
+    """
     if rating:
         rows = db.query(
-            """
-            SELECT f.id, f.message_id, f.user_id, u.username, f.rating, f.comment,
-                   f.created_at, LEFT(m.content, 160) AS message_preview, s.id AS session_id
-            FROM message_feedbacks f
-            JOIN users u ON u.id = f.user_id
-            JOIN messages m ON m.id = f.message_id
-            JOIN sessions s ON s.id = m.session_id
-            WHERE f.rating = ?
-            ORDER BY f.created_at DESC
-            LIMIT ?
-            """,
+            sql + " WHERE f.rating = ? ORDER BY f.created_at DESC LIMIT ?",
             (rating, limit),
         )
     else:
-        rows = db.query(
-            """
-            SELECT f.id, f.message_id, f.user_id, u.username, f.rating, f.comment,
-                   f.created_at, LEFT(m.content, 160) AS message_preview, s.id AS session_id
-            FROM message_feedbacks f
-            JOIN users u ON u.id = f.user_id
-            JOIN messages m ON m.id = f.message_id
-            JOIN sessions s ON s.id = m.session_id
-            ORDER BY f.created_at DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
-    return [dict(r) for r in rows]
+        rows = db.query(sql + " ORDER BY f.created_at DESC LIMIT ?", (limit,))
+
+    out: list[dict] = []
+    for r in rows:
+        item = dict(r)
+        q = _question_before(str(item.get("session_id") or ""), int(item["message_id"]))
+        item["question_preview"] = (q[:120] + "…") if len(q) > 120 else q
+        out.append(item)
+    return out
+
+
+def get_feedback_detail(feedback_id: int) -> dict | None:
+    """管理端抽检：完整用户提问 + 助手回答 + 反馈备注。"""
+    row = db.query_one(
+        """
+        SELECT f.id, f.message_id, f.user_id, u.username, f.rating, f.comment,
+               f.created_at, m.content AS answer, s.id AS session_id
+        FROM message_feedbacks f
+        JOIN users u ON u.id = f.user_id
+        JOIN messages m ON m.id = f.message_id
+        JOIN sessions s ON s.id = m.session_id
+        WHERE f.id = ?
+        """,
+        (feedback_id,),
+    )
+    if not row:
+        return None
+    item = dict(row)
+    item["question"] = _question_before(str(item.get("session_id") or ""), int(item["message_id"]))
+    item["answer"] = str(item.get("answer") or "")
+    item["message_preview"] = item["answer"][:160]
+    item["question_preview"] = (
+        (item["question"][:120] + "…") if len(item["question"]) > 120 else item["question"]
+    )
+    return item
 
 
 def feedback_stats() -> dict:

@@ -1,8 +1,13 @@
-// 左侧常驻侧边栏：对话历史（知识库已迁入管理后台）
+// 左侧常驻侧边栏：问答（新对话+历史）在上，其他功能在下
 
 import { useState } from "react";
 import { api } from "../api/client";
 import type { SessionItem } from "../api/types";
+
+export interface NavItem {
+  id: string;
+  label: string;
+}
 
 interface Props {
   sessions: SessionItem[];
@@ -13,8 +18,15 @@ interface Props {
   onLogout: () => void;
   username: string;
   isAdmin?: boolean;
-  onAdminClick?: () => void;
-  adminActive?: boolean;
+  hideChats?: boolean;
+  shellLabel?: string;
+  navItems?: NavItem[];
+  activeNav?: string;
+  onNavSelect?: (id: string) => void;
+  /** 是否展示问答会话区（从业者常开） */
+  showSessions?: boolean;
+  /** 问答导航项 id，用于高亮「问答」 */
+  askNavId?: string;
 }
 
 export default function Sidebar({
@@ -26,23 +38,74 @@ export default function Sidebar({
   onLogout,
   username,
   isAdmin = false,
-  onAdminClick,
-  adminActive = false,
+  hideChats = false,
+  shellLabel,
+  navItems = [],
+  activeNav,
+  onNavSelect,
+  showSessions = true,
+  askNavId = "ask",
 }: Props) {
+  const chatsVisible = !hideChats && showSessions;
+  // 问答之外的工具入口（问答本身由上方会话区承担）
+  const toolItems = navItems.filter((item) => item.id !== askNavId && item.id !== "chat");
+  const askActive = activeNav === askNavId || activeNav === "chat";
+
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
         <span className="logo">⚖️</span>
-        <span className="sidebar-title">法律知识问答</span>
+        <span className="sidebar-title">{shellLabel || "法律知识问答"}</span>
       </div>
 
-      <ChatsTab
-        sessions={sessions}
-        activeId={activeId}
-        onSelect={onSelectSession}
-        onNew={onNewSession}
-        onDelete={onDeleteSession}
-      />
+      {chatsVisible && (
+        <section className="sidebar-ask" aria-label="问答">
+          <div className="sidebar-ask-head">
+            <button
+              type="button"
+              className={`sidebar-ask-title ${askActive ? "active" : ""}`}
+              onClick={() => onNavSelect?.(askNavId)}
+            >
+              问答
+            </button>
+            <button type="button" className="btn-new-chat btn-new-chat-compact" onClick={onNewSession}>
+              新对话
+            </button>
+          </div>
+          <ChatList
+            sessions={sessions}
+            activeId={activeId}
+            askActive={askActive}
+            onSelect={(id) => {
+              onNavSelect?.(askNavId);
+              onSelectSession(id);
+            }}
+            onDelete={onDeleteSession}
+          />
+        </section>
+      )}
+
+      {toolItems.length > 0 && (
+        <nav className="sidebar-nav" aria-label="工作台功能">
+          <div className="sidebar-nav-label">工作台</div>
+          {toolItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`sidebar-nav-item ${activeNav === item.id ? "active" : ""}`}
+              onClick={() => onNavSelect?.(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {hideChats && navItems.length === 0 && (
+        <div className="sidebar-body">
+          <div className="sidebar-empty">管理后台 · 无问答入口</div>
+        </div>
+      )}
 
       <div className="sidebar-user">
         <span className="user-avatar">👤</span>
@@ -50,14 +113,6 @@ export default function Sidebar({
           {username}
           {isAdmin && <span className="admin-badge">管理员</span>}
         </span>
-        {isAdmin && onAdminClick && (
-          <button
-            className={`btn-ghost btn-sm ${adminActive ? "admin-active" : ""}`}
-            onClick={onAdminClick}
-          >
-            {adminActive ? "返回问答" : "🛡️ 后台"}
-          </button>
-        )}
         <button className="btn-ghost btn-sm" onClick={onLogout}>
           退出
         </button>
@@ -66,17 +121,17 @@ export default function Sidebar({
   );
 }
 
-function ChatsTab({
+function ChatList({
   sessions,
   activeId,
+  askActive,
   onSelect,
-  onNew,
   onDelete,
 }: {
   sessions: SessionItem[];
   activeId: string | null;
+  askActive: boolean;
   onSelect: (id: string) => void;
-  onNew: () => void;
   onDelete: (id: string) => void;
 }) {
   const [manage, setManage] = useState(false);
@@ -115,13 +170,11 @@ function ChatsTab({
   };
 
   return (
-    <div className="sidebar-body">
-      <div className="chat-toolbar">
-        <button className="btn-new-chat" onClick={onNew}>
-          ＋ 新对话
-        </button>
-        {sessions.length > 0 && (
+    <div className="sidebar-ask-body">
+      {sessions.length > 0 && (
+        <div className="chat-toolbar chat-toolbar-mini">
           <button
+            type="button"
             className={`btn-manage ${manage ? "active" : ""}`}
             onClick={() => {
               setManage((v) => !v);
@@ -130,38 +183,34 @@ function ChatsTab({
           >
             {manage ? "取消" : "管理"}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {manage && sessions.length > 0 && (
         <div className="manage-bar">
           <label className="manage-all">
             <input
               type="checkbox"
-              checked={selected.size === sessions.length}
+              checked={selected.size === sessions.length && sessions.length > 0}
               onChange={toggleAll}
             />
             全选
           </label>
-          <span className="manage-count">已选 {selected.size} 个</span>
-          <button
-            className="manage-delete"
-            disabled={selected.size === 0}
-            onClick={deleteSelected}
-          >
-            删除选中
+          <span className="manage-count">已选 {selected.size}</span>
+          <button className="manage-delete" disabled={selected.size === 0} onClick={deleteSelected}>
+            删除
           </button>
         </div>
       )}
 
       <div className="chat-list">
         {sessions.length === 0 && (
-          <div className="sidebar-empty">暂无历史对话，开始一个新对话吧</div>
+          <div className="sidebar-empty">暂无会话，点「新对话」开始检索</div>
         )}
         {sessions.map((s) => (
           <div
             key={s.id}
-            className={`chat-item ${activeId === s.id ? "active" : ""} ${manage && selected.has(s.id) ? "selected" : ""}`}
+            className={`chat-item ${askActive && activeId === s.id ? "active" : ""} ${manage && selected.has(s.id) ? "selected" : ""}`}
             onClick={() => {
               if (manage) toggle(s.id);
               else onSelect(s.id);
@@ -179,7 +228,7 @@ function ChatsTab({
             <div className="chat-item-main">
               <div className="chat-item-title">{s.title}</div>
               <div className="chat-item-meta">
-                {s.msg_count} 条消息 · {formatTime(s.updated_at)}
+                {s.msg_count} 条 · {formatTime(s.updated_at)}
               </div>
             </div>
             {!manage && (

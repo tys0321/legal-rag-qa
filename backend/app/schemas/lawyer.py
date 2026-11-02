@@ -8,11 +8,13 @@ class LawyerApplyRequest(BaseModel):
     license_no: str = Field(..., min_length=4, max_length=64)
     region: str = Field(..., min_length=2, max_length=64)
     specialties: list[str] = Field(default_factory=list)
+    profession: str = Field(default="lawyer", max_length=32)
 
 
 class LawyerProfileOut(BaseModel):
     user_id: int
     username: str = ""
+    profession: str = "lawyer"  # lawyer|judge|prosecutor
     license_no: str = ""
     region: str = ""
     specialties: list[str] = []
@@ -26,6 +28,18 @@ class LawyerProfileOut(BaseModel):
 class LawyerReviewRequest(BaseModel):
     approve: bool
     reason: str = ""
+
+
+class LawyerBatchReviewRequest(BaseModel):
+    user_ids: list[int] = Field(..., min_length=1, max_length=100)
+    approve: bool
+    reason: str = ""
+
+
+class LawyerBatchReviewResult(BaseModel):
+    ok: int = 0
+    fail: int = 0
+    failed_ids: list[int] = Field(default_factory=list)
 
 
 class LawyerRevokeRequest(BaseModel):

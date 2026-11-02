@@ -20,19 +20,26 @@ DEFAULT_DISCLAIMER = (
 )
 
 
+_CACHE_MTIME: float | None = None
+
+
 def load_catalog() -> dict:
-    global _CACHE
-    if _CACHE is None:
-        path = Path(_CATALOG_PATH)
-        if not path.exists():
-            raise AppError("文书模板配置缺失", 503)
+    """按文件修改时间自动失效缓存，改配置后无需重启。"""
+    global _CACHE, _CACHE_MTIME
+    path = Path(_CATALOG_PATH)
+    if not path.exists():
+        raise AppError("文书模板配置缺失", 503)
+    mtime = path.stat().st_mtime
+    if _CACHE is None or _CACHE_MTIME != mtime:
         _CACHE = json.loads(path.read_text(encoding="utf-8"))
+        _CACHE_MTIME = mtime
     return _CACHE
 
 
 def reload_catalog() -> dict:
-    global _CACHE
+    global _CACHE, _CACHE_MTIME
     _CACHE = None
+    _CACHE_MTIME = None
     return load_catalog()
 
 
@@ -48,9 +55,15 @@ def disclaimer() -> str:
     return str(load_catalog().get("disclaimer") or DEFAULT_DISCLAIMER)
 
 
-def list_templates() -> dict:
+def list_templates(audience: str | None = None) -> dict:
     items = []
+    aud = (audience or "").strip().lower()
     for t in _templates():
+        audiences = t.get("audiences")
+        if aud and audiences:
+            allowed = {str(x).lower() for x in audiences}
+            if aud not in allowed:
+                continue
         fields = t.get("fields") or []
         items.append(
             {
@@ -59,6 +72,7 @@ def list_templates() -> dict:
                 "category": t.get("category") or "",
                 "description": t.get("description") or "",
                 "field_count": len(fields),
+                "audiences": list(audiences or []),
             }
         )
     return {
@@ -111,6 +125,14 @@ def _render(body: str, values: dict[str, str]) -> str:
     return _PLACEHOLDER_RE.sub(repl, body)
 
 
+_PHONE_RE = re.compile(r"^1[3-9]\d{9}$")
+_PHONE_KEY_RE = re.compile(r"phone|mobile|tel|电话|手机", re.I)
+
+
+def _is_phone_field(key: str, label: str = "") -> bool:
+    return bool(_PHONE_KEY_RE.search(f"{key} {label}"))
+
+
 def fill_template(template_id: str, field_values: dict[str, str] | None = None) -> dict:
     t = get_template(template_id)
     values = {k: (v if v is not None else "") for k, v in (field_values or {}).items()}
@@ -118,12 +140,24 @@ def fill_template(template_id: str, field_values: dict[str, str] | None = None) 
     values["disclaimer"] = disclaimer()
 
     missing: list[str] = []
+    invalid: list[str] = []
     for f in t.get("fields") or []:
         key = f.get("key") or ""
         if not key:
             continue
-        if f.get("required") and not str(values.get(key) or "").strip():
+        raw = str(values.get(key) or "").strip()
+        if f.get("required") and not raw:
             missing.append(key)
+            continue
+        label = str(f.get("label") or "")
+        if raw and _is_phone_field(key, label) and not _PHONE_RE.match(raw):
+            invalid.append(key)
+
+    if invalid:
+        raise AppError(
+            f"手机号须为11位有效号码：{', '.join(invalid)}",
+            400,
+        )
 
     body = t.get("body") or ""
     markdown = _render(body, values).strip() + "\n"

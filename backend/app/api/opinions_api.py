@@ -9,6 +9,7 @@ from app.schemas.chat import SourceOut
 from app.schemas.opinion import OpinionOut, OpinionRequest
 from app.services.audit import log_action
 from app.services.opinion import generate_opinion
+from app.services.user_records import save_record
 
 router = APIRouter(prefix="/api", tags=["opinions"])
 
@@ -21,6 +22,7 @@ def create_opinion(req: OpinionRequest, user: dict = Depends(get_current_user)) 
             scene=req.scene,
             question=req.question,
             slot_answers=req.slot_answers,
+            mode=req.mode,
         )
     except RuntimeError as exc:
         raise AppError(str(exc), 503) from exc
@@ -31,7 +33,7 @@ def create_opinion(req: OpinionRequest, user: dict = Depends(get_current_user)) 
         user["id"],
         user["username"],
         "opinion_generate",
-        f"scene={req.scene} risk={result.risk_level} blocked={result.blocked}",
+        f"mode={result.mode} scene={req.scene} risk={result.risk_level} blocked={result.blocked}",
     )
     sources_out: list[SourceOut] = []
     for s in result.sources:
@@ -52,11 +54,12 @@ def create_opinion(req: OpinionRequest, user: dict = Depends(get_current_user)) 
                 effective_detail=str(s.get("effective_detail") or ""),
             )
         )
-    return OpinionOut(
+    out = OpinionOut(
         scene=result.scene,
         risk_level=result.risk_level,
         blocked=result.blocked,
         title=result.title,
+        mode=result.mode,
         sections=result.sections,
         markdown=result.markdown,
         sources=sources_out,
@@ -64,3 +67,12 @@ def create_opinion(req: OpinionRequest, user: dict = Depends(get_current_user)) 
         watermark=result.watermark,
         disclaimer=result.disclaimer,
     )
+    if not result.blocked:
+        save_record(
+            int(user["id"]),
+            "opinion",
+            (result.title or f"{req.scene}意见书")[:200],
+            f"{result.mode} · 风险 {result.risk_level} · 置信度 {result.confidence}",
+            out.model_dump(),
+        )
+    return out

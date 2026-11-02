@@ -21,18 +21,22 @@ def client() -> TestClient:
     app.dependency_overrides.clear()
 
 
-def test_catalog_has_five() -> None:
+def test_catalog_has_calculators() -> None:
     data = calc.list_calculators()
-    assert data["total"] == 5
+    assert data["total"] >= 5
     assert "估算仅供参考" in data["notice"]
     ids = {x["id"] for x in data["items"]}
-    assert ids == {
+    assert {
         "litigation_fee",
         "private_lend_interest",
         "work_injury",
         "traffic_medical",
         "overtime_pay",
-    }
+        "appeal_deadline",
+        "civil_limitation",
+        "detention_term",
+    }.issubset(ids)
+    assert calc.list_calculators(audience="prosecutor")["total"] >= 1
 
 
 def test_litigation_fee_brackets() -> None:
@@ -88,7 +92,7 @@ def test_traffic_and_overtime() -> None:
 def test_api(client: TestClient) -> None:
     lst = client.get("/api/calculators")
     assert lst.status_code == 200
-    assert lst.json()["total"] == 5
+    assert lst.json()["total"] >= 5
 
     detail = client.get("/api/calculators/litigation_fee")
     assert detail.status_code == 200

@@ -86,7 +86,7 @@ class ChatService:
                         risk_banner=risk.banner,
                         force_lawyer_cta=risk.force_lawyer_cta,
                         scene=current_scene,
-                        need_slots=[{"key": m["key"], "prompt": m["prompt"]} for m in missing],
+                        need_slots=slot_svc.need_slots_payload(missing),
                         waiting_for_slot=True,
                     )
                     mid = _persist(result)

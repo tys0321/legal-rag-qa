@@ -84,9 +84,13 @@ def get_user_by_username(username: str) -> dict | None:
     return dict(user) if user else None
 
 
+CERTIFIED_ROLES = ("lawyer", "judge", "prosecutor")
+ALLOWED_ROLES = ("admin", "user", *CERTIFIED_ROLES)
+
+
 def set_role(username: str, role: str) -> bool:
-    """设置用户角色（admin / user / lawyer）。返回是否成功。"""
-    if role not in ("admin", "user", "lawyer"):
+    """设置用户角色（admin / user / lawyer / judge / prosecutor）。返回是否成功。"""
+    if role not in ALLOWED_ROLES:
         return False
     cur = db.execute("UPDATE users SET role = ? WHERE username = ?", (role, username.strip()))
     return cur.rowcount > 0

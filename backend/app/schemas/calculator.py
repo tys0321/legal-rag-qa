@@ -21,6 +21,7 @@ class CalculatorSummary(BaseModel):
     category: str = ""
     description: str = ""
     field_count: int = 0
+    audiences: list[str] = []
 
 
 class CalculatorDetail(BaseModel):

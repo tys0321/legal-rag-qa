@@ -1,16 +1,24 @@
-// 对话状态管理 hook：发送消息、切换历史会话、新建会话
+// 对话状态管理 hook：发送消息、切换历史会话、新建会话、槽位 ABCD
 
 import { useCallback, useState } from "react";
 import { api } from "../api/client";
-import type { ChatMessage } from "../api/types";
+import type { ChatMessage, SlotOption } from "../api/types";
+
+export interface SlotPromptState {
+  key: string;
+  prompt: string;
+  options: SlotOption[];
+}
 
 export interface ChatController {
   messages: ChatMessage[];
   busy: boolean;
   activeSessionId: string | null;
+  slotPrompt: SlotPromptState | null;
   send: (text: string) => Promise<void>;
   loadSession: (sessionId: string) => Promise<void>;
   newSession: () => void;
+  clearSlot: () => void;
 }
 
 let seq = 0;
@@ -19,10 +27,29 @@ function nextId(): string {
   return `m${Date.now()}-${seq}`;
 }
 
+function pickSlotPrompt(
+  needSlots?: { key: string; prompt: string; options?: SlotOption[] }[],
+  waiting?: boolean,
+): SlotPromptState | null {
+  if (!waiting || !needSlots?.length) return null;
+  const first = needSlots[0];
+  const options =
+    first.options && first.options.length > 0
+      ? first.options
+      : [
+          { key: "A", label: "是" },
+          { key: "B", label: "否" },
+          { key: "C", label: "不确定" },
+          { key: "D", label: "其他情况" },
+        ];
+  return { key: first.key, prompt: first.prompt, options };
+}
+
 export function useChat(): ChatController {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [slotPrompt, setSlotPrompt] = useState<SlotPromptState | null>(null);
 
   const send = useCallback(
     async (text: string) => {
@@ -32,6 +59,7 @@ export function useChat(): ChatController {
       const userMsg: ChatMessage = { id: nextId(), role: "user", content: trimmed };
       setMessages((prev) => [...prev, userMsg]);
       setBusy(true);
+      setSlotPrompt(null);
 
       try {
         const resp = await api.chat({ message: trimmed, session_id: activeSessionId });
@@ -51,9 +79,11 @@ export function useChat(): ChatController {
           scene: resp.scene,
           messageId: resp.message_id ?? null,
           feedback: null,
+          needSlots: resp.need_slots,
+          waitingForSlot: resp.waiting_for_slot,
         };
         setMessages((prev) => [...prev, aiMsg]);
-        // 通知侧边栏刷新会话列表
+        setSlotPrompt(pickSlotPrompt(resp.need_slots, resp.waiting_for_slot));
         window.dispatchEvent(new CustomEvent("sessions:changed"));
       } catch (err) {
         const aiMsg: ChatMessage = {
@@ -72,6 +102,7 @@ export function useChat(): ChatController {
 
   const loadSession = useCallback(async (sessionId: string) => {
     setBusy(true);
+    setSlotPrompt(null);
     try {
       const data = await api.sessionMessages(sessionId);
       const loaded = (data.messages ?? []).map((m) => {
@@ -96,7 +127,21 @@ export function useChat(): ChatController {
   const newSession = useCallback(() => {
     setActiveSessionId(null);
     setMessages([]);
+    setSlotPrompt(null);
   }, []);
 
-  return { messages, busy, activeSessionId, send, loadSession, newSession };
+  const clearSlot = useCallback(() => {
+    setSlotPrompt(null);
+  }, []);
+
+  return {
+    messages,
+    busy,
+    activeSessionId,
+    slotPrompt,
+    send,
+    loadSession,
+    newSession,
+    clearSlot,
+  };
 }

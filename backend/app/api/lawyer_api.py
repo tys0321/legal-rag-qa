@@ -17,6 +17,8 @@ from app.schemas.lawyer import (
     DisclaimerAckOut,
     DisclaimerStatusOut,
     LawyerApplyRequest,
+    LawyerBatchReviewRequest,
+    LawyerBatchReviewResult,
     LawyerProfileOut,
     LawyerReviewRequest,
     LawyerRevokeRequest,
@@ -33,6 +35,7 @@ def _to_out(user_id: int, profile: dict | None, *, is_admin: bool = False) -> La
         return LawyerProfileOut(
             user_id=user_id,
             username=((profile or {}).get("username") or ""),
+            profession="lawyer",
             license_no=((profile or {}).get("license_no") or "ADMIN"),
             region=((profile or {}).get("region") or "全域"),
             specialties=list((profile or {}).get("specialties") or ["全部场景"]),
@@ -47,6 +50,7 @@ def _to_out(user_id: int, profile: dict | None, *, is_admin: bool = False) -> La
     return LawyerProfileOut(
         user_id=user_id,
         username=profile.get("username") or "",
+        profession=lawyer_repo.normalize_profession(profile.get("profession")),
         license_no=profile.get("license_no") or "",
         region=profile.get("region") or "",
         specialties=list(profile.get("specialties") or []),
@@ -63,6 +67,7 @@ def _item_out(row: dict) -> LawyerProfileOut:
     return LawyerProfileOut(
         user_id=uid,
         username=row.get("username") or "",
+        profession=lawyer_repo.normalize_profession(row.get("profession")),
         license_no=row.get("license_no") or "",
         region=row.get("region") or "",
         specialties=list(row.get("specialties") or []),
@@ -88,10 +93,11 @@ async def lawyer_apply(
     license_no: str = Form(...),
     region: str = Form(...),
     specialties: str = Form("[]"),
+    profession: str = Form("lawyer"),
     files: list[UploadFile] = File(default=[]),
     user: dict = Depends(get_current_user),
 ) -> LawyerProfileOut:
-    """提交执业证材料（multipart）。specialties 为 JSON 数组字符串。"""
+    """提交职业认证材料（multipart）。specialties 为 JSON 数组字符串。"""
     import json
 
     try:
@@ -102,7 +108,7 @@ async def lawyer_apply(
         specs = [s.strip() for s in specialties.split(",") if s.strip()]
 
     if not license_no.strip() or not region.strip():
-        raise AppError("执业证号与地区不能为空", 400)
+        raise AppError("证号与地区不能为空", 400)
 
     CERT_DIR.mkdir(parents=True, exist_ok=True)
     saved: list[str] = []
@@ -127,11 +133,12 @@ async def lawyer_apply(
             region=region,
             specialties=[str(x) for x in specs][:12],
             license_files=saved,
+            profession=profession,
         )
     except ValueError as exc:
         raise AppError(str(exc), 400) from exc
 
-    log_action(user["id"], user["username"], "lawyer_apply", license_no)
+    log_action(user["id"], user["username"], "profession_apply", f"{profession}:{license_no}")
     return _to_out(user["id"], profile)
 
 
@@ -148,10 +155,16 @@ def lawyer_apply_json(
             region=req.region,
             specialties=req.specialties[:12],
             license_files=[],
+            profession=req.profession,
         )
     except ValueError as exc:
         raise AppError(str(exc), 400) from exc
-    log_action(user["id"], user["username"], "lawyer_apply_json", req.license_no)
+    log_action(
+        user["id"],
+        user["username"],
+        "profession_apply_json",
+        f"{req.profession}:{req.license_no}",
+    )
     return _to_out(user["id"], profile)
 
 
@@ -206,6 +219,34 @@ def admin_review(
         f"user={user_id} approve={req.approve}",
     )
     return _to_out(user_id, profile)
+
+
+@router.post("/admin/lawyer/batch-review", response_model=LawyerBatchReviewResult)
+def admin_batch_review(
+    req: LawyerBatchReviewRequest,
+    admin: dict = Depends(require_perm("lawyers")),
+) -> LawyerBatchReviewResult:
+    """批量通过/驳回律师认证。"""
+    ok = 0
+    failed: list[int] = []
+    for uid in req.user_ids:
+        try:
+            profile = lawyer_repo.review(
+                uid, approve=req.approve, reviewer_id=admin["id"], reason=req.reason
+            )
+            if not profile:
+                failed.append(uid)
+                continue
+            ok += 1
+        except Exception:  # noqa: BLE001
+            failed.append(uid)
+    log_action(
+        admin["id"],
+        admin["username"],
+        "lawyer_batch_review",
+        f"approve={req.approve} ok={ok} fail={len(failed)} ids={req.user_ids[:20]}",
+    )
+    return LawyerBatchReviewResult(ok=ok, fail=len(failed), failed_ids=failed)
 
 
 @router.post("/admin/lawyer/{user_id}/revoke", response_model=LawyerProfileOut)

@@ -45,7 +45,6 @@ def test_feedback_flow(client: TestClient) -> None:
         pytest.skip("MySQL 不可用")
 
     _ensure_user(1, "tester", "user")
-    _ensure_user(99, "admin", "admin")
 
     store = SessionStore()
     sid = store.create(1, "反馈测试问题")
@@ -68,12 +67,21 @@ def test_feedback_flow(client: TestClient) -> None:
     assert ok2.status_code == 200
     assert ok2.json()["rating"] == "useless"
 
-    _as_user(99, "admin", "admin")
+    # 依赖覆盖为根管理员 tys（不写库，避免与真实 tys 冲突）
+    _as_user(99, "tys", "admin")
     lst = client.get("/api/admin/feedbacks?limit=20")
     assert lst.status_code == 200, lst.text
     body = lst.json()
     assert body["total"] >= 1
-    assert any(x["message_id"] == mid for x in body["items"])
+    hit = next(x for x in body["items"] if x["message_id"] == mid)
+    assert "拖欠工资" in (hit.get("question_preview") or "")
+
+    detail = client.get(f"/api/admin/feedbacks/{hit['id']}")
+    assert detail.status_code == 200, detail.text
+    d = detail.json()
+    assert "拖欠工资" in d["question"]
+    assert "劳动仲裁" in d["answer"]
+    assert d["rating"] == "useless"
 
 
 def test_chat_returns_message_id(client: TestClient) -> None:

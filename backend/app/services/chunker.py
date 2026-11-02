@@ -15,6 +15,60 @@ ARTICLE_RE = re.compile(r"^\s*(第[一二三四五六七八九十百千0-9]+[条
 LINE_BREAK_RE = re.compile(r"[ \t\u3000]+")
 STRUCT_RE = re.compile(r"^\s*(第[一二三四五六七八九十百千0-9]+[编章节条])\s*")
 
+# 立法套话 / 目录等对检索无用的行（入库时剔除，缩短块长、加快检索与生成）
+_BOILERPLATE_RES = [
+    re.compile(r"^为了.{2,120}?(制定|修订)本[法条例办法规定规则]"),
+    re.compile(r"^为保障.{2,80}制定本"),
+    re.compile(r"^为规范.{2,80}制定本"),
+    re.compile(r"^根据宪法[，,].{0,60}制定本"),
+    re.compile(r"^根据《[^》]+》[，,].{0,60}制定本"),
+    re.compile(r"^依据《[^》]+》[，,].{0,60}制定本"),
+    re.compile(r"^目\s*录$"),
+    re.compile(r"^目\s*次$"),
+    re.compile(r"^（?[一二三四五六七八九十]+）?\s*总\s*则\s*$"),
+    re.compile(r"^发布机关[:：]"),
+    re.compile(r"^主\s*席\s*令"),
+    re.compile(r"^中华人民共和国主席令"),
+    re.compile(r"^现予公布"),
+    re.compile(r"^自\d{4}年\d{1,2}月\d{1,2}日起施行[。.]?$"),
+    re.compile(r"^\d{4}年\d{1,2}月\d{1,2}日.*(通过|公布|修正|修订)"),
+    re.compile(r"^(第[一二三四五六七八九十百]+届)?.{0,20}人民代表大会.{0,30}(通过|决定)"),
+    re.compile(r"^（?[0-9]{4}年修订）?$"),
+    re.compile(r"^本法自.+起施行[。.]?$"),
+    re.compile(r"^本条例自.+起施行[。.]?$"),
+]
+
+
+def is_boilerplate(para: str) -> bool:
+    """判断是否为立法套话 / 目录等可丢弃行。含「第×条」的正文一律保留。"""
+    t = (para or "").strip()
+    if not t:
+        return True
+    if STRUCT_RE.match(t) and ("条" in t[:8] or "章" in t[:8] or "节" in t[:8] or "编" in t[:8]):
+        # 结构标题本身保留（条尤为重要）
+        if t.endswith("条") or "条" in t[:12]:
+            return False
+    for pat in _BOILERPLATE_RES:
+        if pat.search(t):
+            return True
+    # 过短且像页眉页脚
+    if len(t) <= 4 and t in {"目录", "目次", "附录", "附则"}:
+        return True
+    return False
+
+
+def filter_boilerplate(
+    paras: list[str], pages: list[int]
+) -> tuple[list[str], list[int]]:
+    out_p: list[str] = []
+    out_pg: list[int] = []
+    for p, pg in zip(paras, pages):
+        if is_boilerplate(p):
+            continue
+        out_p.append(p)
+        out_pg.append(pg)
+    return out_p, out_pg
+
 
 @dataclass
 class Chunk:
@@ -206,9 +260,8 @@ def chunk_document(doc: ParsedDoc, chunk_size: int = 600, overlap: int = 80) -> 
     """
     chunks: list[Chunk] = []
     idx = 0
-    for text, article, page, bian, chapter, section in _split_articles(
-        doc.paragraphs, doc.page_of_para
-    ):
+    paras, pages = filter_boilerplate(doc.paragraphs, doc.page_of_para)
+    for text, article, page, bian, chapter, section in _split_articles(paras, pages):
         text = text.strip()
         if not text:
             continue

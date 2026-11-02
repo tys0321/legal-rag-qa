@@ -110,6 +110,15 @@ class RagResult:
     waiting_for_slot: bool = False
 
 
+def _snip(text: str, limit: int | None = None) -> str:
+    """截断过长条文，保留条款实质内容，降低 prompt 体积与生成时延。"""
+    t = (text or "").strip()
+    lim = limit if limit is not None else settings.context_snip_chars
+    if lim <= 0 or len(t) <= lim:
+        return t
+    return t[: lim - 1].rstrip() + "…"
+
+
 def _build_context(sources: list[dict]) -> str:
     parts = []
     for i, s in enumerate(sources, start=1):
@@ -124,7 +133,7 @@ def _build_context(sources: list[dict]) -> str:
             x for x in [s.get("bian") or "", s.get("chapter") or "", s.get("section") or ""] if x
         )
         hier_tag = f"【结构：{hier}】" if hier else ""
-        parts.append(f"[{i}] 来源：《{loc}》{status_tag}{hier_tag}\n{s['text']}")
+        parts.append(f"[{i}] 来源：《{loc}》{status_tag}{hier_tag}\n{_snip(s.get('text') or '')}")
     return "\n\n".join(parts)
 
 
@@ -183,7 +192,7 @@ def answer_slow(question: str, history: list[dict] = None) -> RagResult:
             confidence="low",
         )
 
-    related_cases = store.search_cases(question, top_k=4)
+    related_cases = store.search_cases(question, top_k=settings.related_cases_top_k)
 
     context = _build_context(hits)
     hist = _history_window(history)
@@ -196,14 +205,14 @@ def answer_slow(question: str, history: list[dict] = None) -> RagResult:
             ),
         },
     ]
-    text = chat(messages, temperature=0.2, max_tokens=1200)
+    text = chat(messages, temperature=0.2, max_tokens=900)
 
     # 引用验证
     verified = verify_answer(text, hits)
     text = verified.answer
     sources = verified.sources
 
-    # 自批评
+    # 自批评（默认关闭；开启时会再打一轮 LLM，时延接近翻倍）
     critic = self_critic(text, hits, context)
     if critic.revised_answer:
         text = critic.revised_answer
@@ -218,11 +227,14 @@ def answer_slow(question: str, history: list[dict] = None) -> RagResult:
         stripped=verified.stripped_citations + critic.strip_citations,
     )
 
+    reason = "slow:hybrid+rerank+verify"
+    if settings.critic_enabled:
+        reason += "+critic"
     return RagResult(
         answer=text,
         mode="slow",
         sources=sources,
-        routed_reason="slow:hybrid+rerank+verify+critic",
+        routed_reason=reason,
         related_cases=related_cases,
         confidence=conf,
         critic_issues=critic.issues,

@@ -1,8 +1,15 @@
 """M2：风险分级与槽位引导。"""
 from __future__ import annotations
 
+from app.services.chunker import is_boilerplate
 from app.services.risk import classify_risk
-from app.services.slots import detect_scene, missing_slots, try_fill_from_message
+from app.services.slots import (
+    build_slot_options,
+    detect_scene,
+    missing_slots,
+    need_slots_payload,
+    try_fill_from_message,
+)
 
 
 def test_l1_blocks_criminal() -> None:
@@ -33,3 +40,26 @@ def test_slot_fill_sequence() -> None:
     assert filled.get("has_contract")
     miss = missing_slots("劳动用工", filled)
     assert any(m["key"] == "hire_date" for m in miss)
+
+
+def test_slot_abcd_options() -> None:
+    miss = missing_slots("劳动用工", {})
+    assert miss
+    opts = build_slot_options(miss[0])
+    assert [o["key"] for o in opts] == ["A", "B", "C", "D"]
+    assert opts[-1]["label"] == "其他情况"
+    payload = need_slots_payload(miss[:1])
+    assert payload[0]["options"][-1]["key"] == "D"
+
+
+def test_slot_fill_choice_a() -> None:
+    filled = try_fill_from_message("劳动用工", "A. 已签订书面劳动合同", {})
+    assert "签订" in filled.get("has_contract", "")
+
+
+def test_boilerplate_filter() -> None:
+    assert is_boilerplate("为了保护劳动者的合法权益，制定本法。")
+    assert is_boilerplate("为保障劳动者合法权益，制定本法。")
+    assert is_boilerplate("根据宪法，制定本法。")
+    assert is_boilerplate("2024年1月1日全国人民代表大会常务委员会通过")
+    assert not is_boilerplate("第三十九条 劳动者有下列情形之一的，用人单位可以解除劳动合同：")

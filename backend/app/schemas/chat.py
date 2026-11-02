@@ -34,9 +34,15 @@ class CaseOut(BaseModel):
     score: float
 
 
+class SlotOptionOut(BaseModel):
+    key: str
+    label: str
+
+
 class SlotNeedOut(BaseModel):
     key: str
     prompt: str
+    options: list[SlotOptionOut] = []
 
 
 class ChatResponse(BaseModel):

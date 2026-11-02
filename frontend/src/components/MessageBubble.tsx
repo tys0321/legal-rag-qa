@@ -1,12 +1,11 @@
-// 单条消息气泡：用户/助手，含快慢路径徽标与引用来源
+// 单条消息气泡：用户/助手，含快慢路径徽标、引用来源与法条点击跳转
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import type { ChatMessage, RelatedCase, Source } from "../api/types";
 
 interface BubbleProps {
   message: ChatMessage;
-  onSwitchLawyer?: () => void;
   onPublishLead?: (scene?: string) => void;
   onFeedback?: (messageId: number, rating: "useful" | "useless") => void;
 }
@@ -19,21 +18,44 @@ function escHtml(s: string): string {
 }
 
 function inlineMarkup(s: string): string {
-  // 行内富文本：加粗 → 法条高亮 → 条款高亮 → 行内代码
   let t = escHtml(s);
   t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  t = t.replace(/《([^《》]{1,30}?法|[^《》]{1,30}?条例|[^《》]{1,30}?办法|[^《》]{1,30}?规定|[^《》]{1,30}?细则|[^《》]{1,30}?解释)》/g, '<span class="hl-law">《$1》</span>');
-  t = t.replace(/(第[一二三四五六七八九十百千万0-9]+[条款款章项])/g, '<span class="hl-article">$1</span>');
+  const held: string[] = [];
+  const hold = (html: string) => {
+    held.push(html);
+    return `\u0000H${held.length - 1}\u0000`;
+  };
+  // 《法名》第X条 成组可点（高亮保留）
+  t = t.replace(
+    /《([^《》]{1,40}?)》(第[一二三四五六七八九十百千万0-9]+条)/g,
+    (_m, law: string, art: string) =>
+      hold(
+        `<button type="button" class="hl-law cite-jump" data-cite-law="${law}" data-cite-article="${art}">《${law}》${art}</button>`,
+      ),
+  );
+  t = t.replace(
+    /《([^《》]{1,30}?法|[^《》]{1,30}?条例|[^《》]{1,30}?办法|[^《》]{1,30}?规定|[^《》]{1,30}?细则|[^《》]{1,30}?解释)》/g,
+    (_m, law: string) =>
+      hold(`<button type="button" class="hl-law cite-jump" data-cite-law="${law}">《${law}》</button>`),
+  );
+  t = t.replace(
+    /(第[一二三四五六七八九十百千万0-9]+[条款款章项])/g,
+    (_m, art: string) =>
+      hold(`<button type="button" class="hl-article cite-jump" data-cite-article="${art}">${art}</button>`),
+  );
+  // [1][2] 引用编号 → 跳到对应来源
+  t = t.replace(/\[(\d+)\]/g, (_m, n: string) =>
+    hold(`<button type="button" class="hl-cite cite-jump" data-cite-idx="${n}">[${n}]</button>`),
+  );
   t = t.replace(/`(.+?)`/g, "<code>$1</code>");
+  t = t.replace(/\u0000H(\d+)\u0000/g, (_m, i: string) => held[Number(i)] || "");
   return t;
 }
 
 function renderBlock(text: string): string {
-  // 块级渲染：编号点 + 缩进子行形成层级结构
   const lines = text.split("\n");
   const out: string[] = [];
   let para: string[] = [];
-  // 当前打开的编号点容器：{ title, sub: string[] }
   let openNum: { title: string; sub: string[] } | null = null;
 
   const closeNum = () => {
@@ -62,13 +84,11 @@ function renderBlock(text: string): string {
       flushPara();
       continue;
     }
-    // 缩进子行：追加到当前编号点（如"   违反的法律是：……"）
     const indentMatch = line.match(/^(\s{2,}|\t)\s*(.+)$/);
     if (indentMatch && openNum) {
       openNum.sub.push(indentMatch[2]);
       continue;
     }
-    // 编号列表：1. **标题** 或 1. 说明
     const numMatch = line.match(/^(\s*)(\d+)[.、．]\s+(.*)$/);
     if (numMatch) {
       closeNum();
@@ -76,15 +96,15 @@ function renderBlock(text: string): string {
       openNum = { title: inlineMarkup(numMatch[3]), sub: [] };
       continue;
     }
-    // 项目符号：- 或 •
     const dashMatch = line.match(/^(\s*)[-•·]\s+(.*)$/);
     if (dashMatch) {
       closeNum();
       flushPara();
-      out.push(`<div class="md-num"><span class="md-num-badge">•</span><div class="md-num-content">${inlineMarkup(dashMatch[2])}</div></div>`);
+      out.push(
+        `<div class="md-num"><span class="md-num-badge">•</span><div class="md-num-content">${inlineMarkup(dashMatch[2])}</div></div>`,
+      );
       continue;
     }
-    // 加粗小节标题：**标题**
     const boldMatch = line.match(/^\*{1,2}(.+?)\*{1,2}\s*$/);
     if (boldMatch && line.trim().length <= 40) {
       closeNum();
@@ -100,10 +120,123 @@ function renderBlock(text: string): string {
   return out.join("");
 }
 
-export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, onFeedback }: BubbleProps) {
+function matchSourceIndex(
+  sources: Source[],
+  law?: string | null,
+  article?: string | null,
+): number {
+  if (!sources.length) return -1;
+  const norm = (s: string) => s.replace(/\s+/g, "");
+  if (article) {
+    const a = norm(article);
+    const byArt = sources.findIndex(
+      (s) => s.article && (norm(s.article) === a || norm(s.article).includes(a) || a.includes(norm(s.article))),
+    );
+    if (byArt >= 0) return byArt;
+  }
+  if (law) {
+    const l = norm(law);
+    const byTitle = sources.findIndex((s) => {
+      const t = norm(s.title || "");
+      return t.includes(l) || l.includes(t) || t.includes(`《${l}》`);
+    });
+    if (byTitle >= 0) return byTitle;
+    const byText = sources.findIndex((s) => norm(s.text || "").includes(l));
+    if (byText >= 0) return byText;
+  }
+  return 0;
+}
+
+export default function MessageBubble({ message, onPublishLead, onFeedback }: BubbleProps) {
   const [expanded, setExpanded] = useState(false);
+  const [focusIdx, setFocusIdx] = useState<number | null>(null);
   const [fbBusy, setFbBusy] = useState(false);
   const [localFb, setLocalFb] = useState<"useful" | "useless" | null>(message.feedback ?? null);
+  const [lookup, setLookup] = useState<{ title: string; article: string; text: string } | null>(null);
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const sourcesRef = useRef<HTMLDivElement>(null);
+
+  const sources = message.sources ?? [];
+
+  useEffect(() => {
+    if (!expanded || focusIdx == null) return;
+    const el = sourcesRef.current?.querySelector(`[data-src-idx="${focusIdx}"]`) as HTMLDetailsElement | null;
+    if (el) {
+      el.open = true;
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [expanded, focusIdx]);
+
+  const openSourceIdx = (idx: number) => {
+    setFocusIdx(idx);
+    setExpanded(true);
+    setLookup(null);
+  };
+
+  const jumpToCite = async (law?: string | null, article?: string | null, citeIdx?: string | null) => {
+    if (citeIdx) {
+      const n = Number(citeIdx);
+      if (Number.isFinite(n) && n >= 1 && n <= sources.length) {
+        openSourceIdx(n - 1);
+        return;
+      }
+    }
+    if (sources.length) {
+      const idx = matchSourceIndex(sources, law, article);
+      if (idx >= 0) {
+        openSourceIdx(idx);
+        return;
+      }
+    }
+    // 本次回答未挂来源时，按法名/条号去知识库检索并弹出原文
+    const q = [law, article].filter(Boolean).join(" ").trim();
+    if (!q) {
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { message: "未找到可跳转的法条原文", type: "warn" },
+        }),
+      );
+      return;
+    }
+    setLookupBusy(true);
+    try {
+      const res = await api.searchLaws(q, 5);
+      const hit = res.items?.[0];
+      if (!hit) {
+        window.dispatchEvent(
+          new CustomEvent("app:toast", {
+            detail: { message: "知识库中未检索到该法条", type: "warn" },
+          }),
+        );
+        return;
+      }
+      setLookup({
+        title: hit.title || law || "法规",
+        article: hit.article || article || "",
+        text: hit.text || "",
+      });
+    } catch (err) {
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: { message: err instanceof Error ? err.message : "检索失败", type: "error" },
+        }),
+      );
+    } finally {
+      setLookupBusy(false);
+    }
+  };
+
+  const onBodyClick = (e: React.MouseEvent) => {
+    const t = (e.target as HTMLElement).closest(".cite-jump") as HTMLElement | null;
+    if (!t) return;
+    e.preventDefault();
+    void jumpToCite(
+      t.getAttribute("data-cite-law"),
+      t.getAttribute("data-cite-article"),
+      t.getAttribute("data-cite-idx"),
+    );
+  };
 
   const submitFeedback = async (rating: "useful" | "useless") => {
     if (!message.messageId || fbBusy) return;
@@ -117,10 +250,10 @@ export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, 
           detail: { message: rating === "useful" ? "已标记有用" : "已标记无用", type: "success" },
         }),
       );
-    } catch (e) {
+    } catch (err) {
       window.dispatchEvent(
         new CustomEvent("app:toast", {
-          detail: { message: e instanceof Error ? e.message : "反馈失败", type: "error" },
+          detail: { message: err instanceof Error ? err.message : "反馈失败", type: "error" },
         }),
       );
     } finally {
@@ -137,7 +270,6 @@ export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, 
     );
   }
 
-  const sources = message.sources ?? [];
   const modeLabel =
     message.mode === "fast"
       ? "⚡ 常识回答"
@@ -155,7 +287,11 @@ export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, 
           <span className="err-text">{message.content}</span>
         ) : (
           <>
-            <div dangerouslySetInnerHTML={{ __html: renderBlock(message.content) }} />
+            <div
+              ref={bodyRef}
+              onClick={onBodyClick}
+              dangerouslySetInnerHTML={{ __html: renderBlock(message.content) }}
+            />
             <p className="answer-disclaimer">
               ⚠️ 以上内容由 AI 基于知识库生成，仅供参考，不构成正式法律意见。
             </p>
@@ -173,7 +309,7 @@ export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, 
                 )}
                 {message.scene && <span className="badge scene">{message.scene}</span>}
                 {sources.length > 0 && (
-                  <button className="src-btn" onClick={() => setExpanded((v) => !v)}>
+                  <button className="src-btn" type="button" onClick={() => setExpanded((v) => !v)}>
                     {expanded ? "收起引用来源" : `查看 ${sources.length} 个引用来源`}
                   </button>
                 )}
@@ -181,15 +317,35 @@ export default function MessageBubble({ message, onSwitchLawyer, onPublishLead, 
             )}
             {message.forceLawyerCta && (
               <div className="cta-row">
-                <button type="button" className="cta-lawyer" onClick={() => onPublishLead?.(message.scene)}>
+                <button
+                  type="button"
+                  className="cta-lawyer"
+                  onClick={() => onPublishLead?.(message.scene)}
+                >
                   发布案源需求
-                </button>
-                <button type="button" className="btn-ghost" onClick={onSwitchLawyer}>
-                  进入律师版
                 </button>
               </div>
             )}
-            {expanded && sources.length > 0 && <SourceList sources={sources} />}
+            {lookupBusy && <p className="muted cite-lookup-hint">正在定位法条原文…</p>}
+            {lookup && (
+              <div className="cite-lookup-panel">
+                <div className="cite-lookup-head">
+                  <strong>
+                    《{lookup.title}》
+                    {lookup.article ? ` ${lookup.article}` : ""}
+                  </strong>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => setLookup(null)}>
+                    关闭
+                  </button>
+                </div>
+                <p className="cite-lookup-body">{lookup.text}</p>
+              </div>
+            )}
+            {expanded && sources.length > 0 && (
+              <div ref={sourcesRef}>
+                <SourceList sources={sources} focusIdx={focusIdx} />
+              </div>
+            )}
             {message.relatedCases && message.relatedCases.length > 0 && (
               <RelatedCases cases={message.relatedCases} />
             )}
@@ -228,12 +384,17 @@ function statusBadge(status?: string) {
   return <span className={`src-tag ${cls}`}>{status}</span>;
 }
 
-function SourceList({ sources }: { sources: Source[] }) {
+function SourceList({ sources, focusIdx }: { sources: Source[]; focusIdx: number | null }) {
   return (
     <div className="inline-sources">
       <div className="src-title">引用来源：</div>
       {sources.map((s, i) => (
-        <details className="src-item" key={s.id + i}>
+        <details
+          className={`src-item ${focusIdx === i ? "src-focus" : ""}`}
+          key={s.id + i}
+          data-src-idx={i}
+          open={focusIdx === i ? true : undefined}
+        >
           <summary>
             <span className="src-num">{i + 1}</span>
             <span className="src-loc">
@@ -244,11 +405,7 @@ function SourceList({ sources }: { sources: Source[] }) {
             {statusBadge(s.effective_status)}
           </summary>
           <div className="src-body">
-            {s.effective_detail && (
-              <p className="src-eff">
-                {s.effective_detail}
-              </p>
-            )}
+            {s.effective_detail && <p className="src-eff">{s.effective_detail}</p>}
             <p>{s.text}</p>
             <p className="src-meta">
               相关度 {s.score} · {s.category}

@@ -45,9 +45,15 @@ def _calculators() -> list[dict]:
     return list(load_catalog().get("calculators") or [])
 
 
-def list_calculators() -> dict:
+def list_calculators(audience: str | None = None) -> dict:
     items = []
+    aud = (audience or "").strip().lower()
     for c in _calculators():
+        audiences = c.get("audiences")
+        if aud and audiences:
+            allowed = {str(x).lower() for x in audiences}
+            if aud not in allowed:
+                continue
         fields = c.get("fields") or []
         items.append(
             {
@@ -56,6 +62,7 @@ def list_calculators() -> dict:
                 "category": c.get("category") or "",
                 "description": c.get("description") or "",
                 "field_count": len(fields),
+                "audiences": list(audiences or []),
             }
         )
     return {
@@ -301,6 +308,82 @@ def _run_traffic_medical(inputs: dict[str, Any]) -> dict:
     }
 
 
+def _parse_date(raw: Any, key: str = "start_date"):
+    from datetime import datetime, timedelta
+
+    s = str(raw or "").strip()
+    if not s:
+        raise AppError(f"缺少日期参数: {key}", 400)
+    try:
+        return datetime.strptime(s[:10], "%Y-%m-%d").date(), timedelta
+    except ValueError as exc:
+        raise AppError(f"日期格式须为 YYYY-MM-DD（{key}）", 400) from exc
+
+
+def _run_appeal_deadline(inputs: dict[str, Any]) -> dict:
+    start, timedelta = _parse_date(inputs.get("start_date"))
+    kind = str(inputs.get("kind") or "判决上诉15日").strip()
+    days_map = {"判决上诉15日": 15, "裁定上诉10日": 10, "答辩15日": 15}
+    days = days_map.get(kind, 15)
+    # 含起算日共 days 天：末日 = 起算日 + (days - 1)
+    end = start + timedelta(days=days - 1)
+    return {
+        "total": float(days),
+        "lines": [
+            {"label": "期限类型", "value": kind, "amount": None},
+            {"label": "起算日", "value": start.isoformat(), "amount": None},
+            {"label": "届满日（含当日）", "value": end.isoformat(), "amount": None},
+            {"label": "日历天数", "value": f"{days} 日", "amount": float(days)},
+        ],
+        "formula": "届满日 = 起算日 + (期限天数 - 1)；未处理节假日顺延",
+        "warnings": ["遇法定节假日是否顺延请按民事诉讼法及相关解释核对"],
+        "inputs_used": {"start_date": start.isoformat(), "kind": kind, "days": days},
+    }
+
+
+def _run_civil_limitation(inputs: dict[str, Any]) -> dict:
+    start, timedelta = _parse_date(inputs.get("start_date"))
+    years = int(_num(inputs, "years", 3) or 3)
+    if years <= 0 or years > 30:
+        raise AppError("时效年数不合理", 400)
+    # 简易：按周年对日减一天近似
+    try:
+        end = start.replace(year=start.year + years) - timedelta(days=1)
+    except ValueError:
+        # 2/29 等
+        end = start + timedelta(days=365 * years + years // 4) - timedelta(days=1)
+    return {
+        "total": float(years),
+        "lines": [
+            {"label": "起算日", "value": start.isoformat(), "amount": None},
+            {"label": "时效年数", "value": f"{years} 年", "amount": float(years)},
+            {"label": "届满日（简估）", "value": end.isoformat(), "amount": None},
+        ],
+        "formula": "普通诉讼时效：起算日起满 N 年的对应日前一日（简估）",
+        "warnings": ["未计入中止、中断、最长保护期间等特殊规则"],
+        "inputs_used": {"start_date": start.isoformat(), "years": years, "end_date": end.isoformat()},
+    }
+
+
+def _run_detention_term(inputs: dict[str, Any]) -> dict:
+    start, timedelta = _parse_date(inputs.get("start_date"))
+    days = int(_num(inputs, "days", 30))
+    if days <= 0 or days > 1000:
+        raise AppError("期限天数不合理", 400)
+    end = start + timedelta(days=days - 1)
+    return {
+        "total": float(days),
+        "lines": [
+            {"label": "起算日", "value": start.isoformat(), "amount": None},
+            {"label": "期限天数", "value": f"{days} 日", "amount": float(days)},
+            {"label": "届满日（含当日）", "value": end.isoformat(), "amount": None},
+        ],
+        "formula": "届满日 = 起算日 + (天数 - 1)",
+        "warnings": ["侦查羁押、审查起诉等期限另有延长规则，请对照刑诉法条文"],
+        "inputs_used": {"start_date": start.isoformat(), "days": days},
+    }
+
+
 def _run_overtime(inputs: dict[str, Any]) -> dict:
     wage = _num(inputs, "monthly_wage")
     if wage <= 0:
@@ -343,6 +426,9 @@ _RUNNERS = {
     "work_injury": _run_work_injury,
     "traffic_medical": _run_traffic_medical,
     "overtime_pay": _run_overtime,
+    "appeal_deadline": _run_appeal_deadline,
+    "civil_limitation": _run_civil_limitation,
+    "detention_term": _run_detention_term,
 }
 
 

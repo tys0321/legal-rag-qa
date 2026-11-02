@@ -5,11 +5,13 @@ import type {
   AdminLogItem,
   AdminStats,
   AdminUserItem,
+  DashboardData,
   AuthResponse,
   ChatRequest,
   ChatResponse,
   ChatMessage,
   DocumentItem,
+  FeedbackDetail,
   FeedbackListResult,
   FirmInfo,
   CaseSearchResult,
@@ -28,7 +30,7 @@ import type {
   ContractReviewResult,
   ContractReviewStatus,
   UserRecordDetail,
-  UserRecordItem,
+  UserRecordListResult,
   SessionItem,
   SnapshotItem,
   StatsResponse,
@@ -154,6 +156,9 @@ export const api = {
     if (rating) q.set("rating", rating);
     return request<FeedbackListResult>(`/api/admin/feedbacks?${q}`);
   },
+  adminFeedbackDetail(id: number): Promise<FeedbackDetail> {
+    return request<FeedbackDetail>(`/api/admin/feedbacks/${id}`);
+  },
 
   // ---- 会话 ----
   listSessions(): Promise<{ sessions: SessionItem[] }> {
@@ -209,6 +214,9 @@ export const api = {
   adminStats(): Promise<AdminStats> {
     return request<AdminStats>("/api/admin/stats");
   },
+  adminDashboard(days = 14): Promise<DashboardData> {
+    return request<DashboardData>(`/api/admin/dashboard?days=${days}`);
+  },
   adminStatus(): Promise<SystemStatus> {
     return request<SystemStatus>("/api/admin/status");
   },
@@ -256,6 +264,7 @@ export const api = {
     license_no: string;
     region: string;
     specialties: string[];
+    profession?: string;
   }): Promise<LawyerProfile> {
     return request<LawyerProfile>("/api/lawyer/apply/json", {
       method: "POST",
@@ -279,6 +288,19 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ approve, reason }),
     });
+  },
+  adminLawyerBatchReview(
+    userIds: number[],
+    approve: boolean,
+    reason = "",
+  ): Promise<{ ok: number; fail: number; failed_ids: number[] }> {
+    return request<{ ok: number; fail: number; failed_ids: number[] }>(
+      "/api/admin/lawyer/batch-review",
+      {
+        method: "POST",
+        body: JSON.stringify({ user_ids: userIds, approve, reason }),
+      },
+    );
   },
   adminLawyerRevoke(userId: number, reason = "管理员撤销认证"): Promise<LawyerProfile> {
     return request<LawyerProfile>(`/api/admin/lawyer/${userId}/revoke`, {
@@ -404,6 +426,7 @@ export const api = {
     scene?: string;
     question?: string;
     slot_answers?: Record<string, string>;
+    mode?: "lawyer" | "judge" | "prosecutor";
   }): Promise<OpinionResult> {
     return request<OpinionResult>("/api/opinions/generate", {
       method: "POST",
@@ -412,8 +435,9 @@ export const api = {
   },
 
   // ---- 文书模板（M5.2） ----
-  listTemplates(): Promise<TemplateListResult> {
-    return request<TemplateListResult>("/api/templates");
+  listTemplates(audience?: string): Promise<TemplateListResult> {
+    const q = audience ? `?audience=${encodeURIComponent(audience)}` : "";
+    return request<TemplateListResult>(`/api/templates${q}`);
   },
   getTemplate(id: string): Promise<TemplateDetail> {
     return request<TemplateDetail>(`/api/templates/${id}`);
@@ -426,8 +450,9 @@ export const api = {
   },
 
   // ---- 法律计算器（M5.3） ----
-  listCalculators(): Promise<CalculatorListResult> {
-    return request<CalculatorListResult>("/api/calculators");
+  listCalculators(audience?: string): Promise<CalculatorListResult> {
+    const q = audience ? `?audience=${encodeURIComponent(audience)}` : "";
+    return request<CalculatorListResult>(`/api/calculators${q}`);
   },
   getCalculator(id: string): Promise<CalculatorDetail> {
     return request<CalculatorDetail>(`/api/calculators/${id}`);
@@ -453,14 +478,30 @@ export const api = {
     });
   },
 
-  listRecords(kind: "template" | "calculator" | "contract"): Promise<{ items: UserRecordItem[] }> {
-    return request<{ items: UserRecordItem[] }>(`/api/records?kind=${kind}`);
+  listRecords(
+    kind: "template" | "calculator" | "contract" | "opinion",
+    opts: { page?: number; pageSize?: number; q?: string } = {},
+  ): Promise<UserRecordListResult> {
+    const q = new URLSearchParams({
+      kind,
+      page: String(opts.page ?? 1),
+      page_size: String(opts.pageSize ?? 10),
+    });
+    if (opts.q?.trim()) q.set("q", opts.q.trim());
+    return request<UserRecordListResult>(`/api/records?${q}`);
   },
   getRecord(id: number): Promise<UserRecordDetail> {
     return request<UserRecordDetail>(`/api/records/${id}`);
   },
   deleteRecord(id: number): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/api/records/${id}`, { method: "DELETE" });
+  },
+  clearRecords(
+    kind: "template" | "calculator" | "contract" | "opinion",
+  ): Promise<{ ok: boolean; deleted: number }> {
+    return request<{ ok: boolean; deleted: number }>(`/api/records?kind=${kind}`, {
+      method: "DELETE",
+    });
   },
 
   async downloadExport(title: string, markdown: string, format: "docx" | "pdf"): Promise<void> {

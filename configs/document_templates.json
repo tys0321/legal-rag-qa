@@ -1,153 +1,1394 @@
 {
-  "version": 1,
-  "watermark": "AI 生成草稿，须律师审核",
-  "disclaimer": "本文件由 AI 根据用户填写内容套用模板生成，仅供一般性参考，不构成正式法律文书或律师意见。使用前请咨询执业律师并根据个案修改。",
+  "version": 4,
+  "watermark": "AI 生成草稿，须人工审核",
+  "disclaimer": "本文件由 AI 根据用户填写内容套用官方文书样式结构生成，仅供起草参考，不构成正式法律文书或律师意见。起诉状/答辩状/授权委托书结构参考最高人民法院《民事诉讼文书样式》；劳动仲裁申请书参考各地人社部门公开样式；离婚协议参考民政部门参考样板；律师函参考地方律师协会业务指引；裁判/检察文书参考最高法/最高检法律文书格式样本。使用前请由执业律师或办案人员根据个案修改并签名盖章。",
   "templates": [
     {
       "id": "civil_complaint",
       "name": "民事起诉状",
       "category": "诉讼文书",
-      "description": "向人民法院提起民事诉讼的起诉状框架。",
+      "description": "结构依据最高人民法院《民事起诉状（公民提起民事诉讼用）》样式。",
       "fields": [
-        {"key": "court", "label": "受诉法院", "type": "text", "required": true, "placeholder": "如：某某区人民法院"},
-        {"key": "plaintiff_name", "label": "原告姓名/名称", "type": "text", "required": true},
-        {"key": "plaintiff_id", "label": "原告身份证/统一社会信用代码", "type": "text", "required": false},
-        {"key": "plaintiff_address", "label": "原告住所地", "type": "text", "required": true},
-        {"key": "plaintiff_phone", "label": "原告联系电话", "type": "text", "required": false},
-        {"key": "defendant_name", "label": "被告姓名/名称", "type": "text", "required": true},
-        {"key": "defendant_address", "label": "被告住所地", "type": "text", "required": true},
-        {"key": "claims", "label": "诉讼请求", "type": "textarea", "required": true, "placeholder": "分点列明请求事项"},
-        {"key": "facts", "label": "事实与理由", "type": "textarea", "required": true},
-        {"key": "evidence", "label": "证据清单（摘要）", "type": "textarea", "required": false},
-        {"key": "date", "label": "落款日期", "type": "text", "required": false, "placeholder": "年 月 日"}
+        {
+          "key": "court",
+          "label": "受诉法院",
+          "type": "text",
+          "required": true,
+          "placeholder": "某某区人民法院"
+        },
+        {
+          "key": "plaintiff_name",
+          "label": "原告姓名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "plaintiff_gender",
+          "label": "原告性别",
+          "type": "text",
+          "required": false,
+          "placeholder": "男/女"
+        },
+        {
+          "key": "plaintiff_birth",
+          "label": "原告出生日期",
+          "type": "text",
+          "required": false,
+          "placeholder": "××××年××月××日"
+        },
+        {
+          "key": "plaintiff_nation",
+          "label": "原告民族",
+          "type": "text",
+          "required": false,
+          "placeholder": "汉族"
+        },
+        {
+          "key": "plaintiff_job",
+          "label": "原告工作单位和职务或职业",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "plaintiff_id",
+          "label": "原告身份证号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "plaintiff_address",
+          "label": "原告住所地",
+          "type": "text",
+          "required": true,
+          "placeholder": "住……（尽量写到门牌号）"
+        },
+        {
+          "key": "plaintiff_phone",
+          "label": "原告联系方式",
+          "type": "text",
+          "required": true,
+          "placeholder": "11位手机号"
+        },
+        {
+          "key": "agent",
+          "label": "委托诉讼代理人（如有）",
+          "type": "text",
+          "required": false,
+          "placeholder": "姓名，××律师事务所律师"
+        },
+        {
+          "key": "defendant_name",
+          "label": "被告姓名/名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "defendant_gender",
+          "label": "被告性别（自然人）",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "defendant_job",
+          "label": "被告工作单位/职务（自然人）",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "defendant_address",
+          "label": "被告住所地",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "defendant_phone",
+          "label": "被告联系方式（如知悉）",
+          "type": "text",
+          "required": false,
+          "placeholder": "11位手机号"
+        },
+        {
+          "key": "claims",
+          "label": "诉讼请求",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "分项列明，须具体可执行。例：一、……；二、本案诉讼费用由被告负担。"
+        },
+        {
+          "key": "facts",
+          "label": "事实和理由",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "先写纠纷经过（时间地点人物起因经过结果），再写法律依据。"
+        },
+        {
+          "key": "evidence",
+          "label": "证据和证据来源，证人姓名和住所",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "1.……；2.……"
+        },
+        {
+          "key": "copies",
+          "label": "起诉状副本份数",
+          "type": "text",
+          "required": false,
+          "placeholder": "按被告人数，如：1"
+        },
+        {
+          "key": "date",
+          "label": "落款日期",
+          "type": "text",
+          "required": false,
+          "placeholder": "××××年××月××日"
+        }
       ],
-      "body": "# 民事起诉状\n\n> {{watermark}}\n\n**原告**：{{plaintiff_name}}  \n身份证/信用代码：{{plaintiff_id}}  \n住所地：{{plaintiff_address}}  \n联系电话：{{plaintiff_phone}}\n\n**被告**：{{defendant_name}}  \n住所地：{{defendant_address}}\n\n## 诉讼请求\n\n{{claims}}\n\n## 事实与理由\n\n{{facts}}\n\n## 证据清单\n\n{{evidence}}\n\n此致  \n**{{court}}**\n\n具状人：{{plaintiff_name}}  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 民事起诉状\n\n> {{watermark}}\n\n**原告**：{{plaintiff_name}}，{{plaintiff_gender}}，{{plaintiff_birth}}生，{{plaintiff_nation}}，{{plaintiff_job}}，住{{plaintiff_address}}。身份证号：{{plaintiff_id}}。联系方式：{{plaintiff_phone}}。\n\n**委托诉讼代理人**：{{agent}}\n\n**被告**：{{defendant_name}}，{{defendant_gender}}，{{defendant_job}}，住{{defendant_address}}。联系方式：{{defendant_phone}}。\n\n**诉讼请求：**\n\n{{claims}}\n\n**事实和理由：**\n\n{{facts}}\n\n**证据和证据来源，证人姓名和住所：**\n\n{{evidence}}\n\n此致  \n**{{court}}**\n\n附：本起诉状副本{{copies}}份\n\n起诉人（签名）：{{plaintiff_name}}  \n{{date}}\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "user",
+        "lawyer",
+        "judge",
+        "prosecutor"
+      ]
     },
     {
       "id": "civil_defense",
-      "name": "答辩状",
+      "name": "民事答辩状",
       "category": "诉讼文书",
-      "description": "对民事起诉的答辩意见框架。",
+      "description": "结构依据最高人民法院《民事答辩状（公民对民事起诉提出答辩用）》样式。",
       "fields": [
-        {"key": "court", "label": "受诉法院", "type": "text", "required": true},
-        {"key": "case_no", "label": "案号（如已知）", "type": "text", "required": false},
-        {"key": "respondent_name", "label": "答辩人姓名/名称", "type": "text", "required": true},
-        {"key": "respondent_address", "label": "答辩人住所地", "type": "text", "required": true},
-        {"key": "opponent_name", "label": "对方当事人（原告）", "type": "text", "required": true},
-        {"key": "defense_points", "label": "答辩意见", "type": "textarea", "required": true, "placeholder": "对诉讼请求与事实的反驳、抗辩事由"},
-        {"key": "facts", "label": "事实与理由", "type": "textarea", "required": true},
-        {"key": "evidence", "label": "证据清单（摘要）", "type": "textarea", "required": false},
-        {"key": "date", "label": "落款日期", "type": "text", "required": false}
+        {
+          "key": "court",
+          "label": "受诉法院",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "case_no",
+          "label": "案号",
+          "type": "text",
+          "required": false,
+          "placeholder": "（××××）……民初……号"
+        },
+        {
+          "key": "cause",
+          "label": "案由",
+          "type": "text",
+          "required": false,
+          "placeholder": "如：民间借贷纠纷"
+        },
+        {
+          "key": "opponent_name",
+          "label": "对方当事人（原告）",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "respondent_name",
+          "label": "答辩人姓名/名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "respondent_gender",
+          "label": "答辩人性别（自然人）",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "respondent_birth",
+          "label": "答辩人出生日期",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "respondent_nation",
+          "label": "答辩人民族",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "respondent_job",
+          "label": "答辩人工作单位和职务或职业",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "respondent_address",
+          "label": "答辩人住所地",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "respondent_phone",
+          "label": "答辩人联系方式",
+          "type": "text",
+          "required": false,
+          "placeholder": "11位手机号"
+        },
+        {
+          "key": "agent",
+          "label": "委托诉讼代理人（如有）",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "defense_points",
+          "label": "答辩意见",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "对诉讼请求的意见及事实理由"
+        },
+        {
+          "key": "evidence",
+          "label": "证据和证据来源，证人姓名和住所",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "copies",
+          "label": "答辩状副本份数",
+          "type": "text",
+          "required": false,
+          "placeholder": "1"
+        },
+        {
+          "key": "date",
+          "label": "落款日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 民事答辩状\n\n> {{watermark}}\n\n**答辩人**：{{respondent_name}}  \n住所地：{{respondent_address}}\n\n**对方当事人（原告）**：{{opponent_name}}  \n案号：{{case_no}}\n\n## 答辩意见\n\n{{defense_points}}\n\n## 事实与理由\n\n{{facts}}\n\n## 证据清单\n\n{{evidence}}\n\n此致  \n**{{court}}**\n\n答辩人：{{respondent_name}}  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 民事答辩状\n\n> {{watermark}}\n\n**答辩人**：{{respondent_name}}，{{respondent_gender}}，{{respondent_birth}}生，{{respondent_nation}}，{{respondent_job}}，住{{respondent_address}}。联系方式：{{respondent_phone}}。\n\n**委托诉讼代理人**：{{agent}}\n\n对**{{court}}**{{case_no}}{{opponent_name}}诉答辩人{{cause}}一案的起诉，答辩如下：\n\n{{defense_points}}\n\n**证据和证据来源，证人姓名和住所：**\n\n{{evidence}}\n\n此致  \n**{{court}}**\n\n附：本答辩状副本{{copies}}份\n\n答辩人（签名）：{{respondent_name}}  \n{{date}}\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "user",
+        "lawyer",
+        "judge",
+        "prosecutor"
+      ]
     },
     {
       "id": "labor_arbitration",
-      "name": "劳动仲裁申请书",
+      "name": "劳动人事争议仲裁申请书",
       "category": "劳动争议",
-      "description": "向劳动人事争议仲裁委员会提出仲裁申请。",
+      "description": "结构参考各地人社部门公开的《劳动人事争议仲裁申请书》样式。",
       "fields": [
-        {"key": "commission", "label": "仲裁委员会", "type": "text", "required": true, "placeholder": "某某市劳动人事争议仲裁委员会"},
-        {"key": "applicant_name", "label": "申请人姓名", "type": "text", "required": true},
-        {"key": "applicant_id", "label": "申请人身份证号", "type": "text", "required": false},
-        {"key": "applicant_address", "label": "申请人住所地", "type": "text", "required": true},
-        {"key": "applicant_phone", "label": "联系电话", "type": "text", "required": false},
-        {"key": "respondent_name", "label": "被申请人（单位）名称", "type": "text", "required": true},
-        {"key": "respondent_address", "label": "被申请人住所地", "type": "text", "required": true},
-        {"key": "hire_date", "label": "入职时间", "type": "text", "required": false},
-        {"key": "position", "label": "岗位", "type": "text", "required": false},
-        {"key": "claims", "label": "仲裁请求", "type": "textarea", "required": true},
-        {"key": "facts", "label": "事实与理由", "type": "textarea", "required": true},
-        {"key": "date", "label": "落款日期", "type": "text", "required": false}
+        {
+          "key": "commission",
+          "label": "仲裁委员会",
+          "type": "text",
+          "required": true,
+          "placeholder": "某某市劳动人事争议仲裁委员会"
+        },
+        {
+          "key": "applicant_name",
+          "label": "申请人姓名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "applicant_gender",
+          "label": "申请人性别",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "applicant_birth",
+          "label": "申请人出生日期",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "applicant_nation",
+          "label": "申请人民族",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "applicant_id",
+          "label": "申请人身份证号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "applicant_hukou",
+          "label": "户籍所在地",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "applicant_address",
+          "label": "现住址/有效通讯地址",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "applicant_phone",
+          "label": "联系电话",
+          "type": "text",
+          "required": false,
+          "placeholder": "11位手机号"
+        },
+        {
+          "key": "respondent_name",
+          "label": "被申请人（单位）名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "respondent_credit",
+          "label": "统一社会信用代码",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "respondent_address",
+          "label": "被申请人住所地",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "respondent_legal",
+          "label": "法定代表人/主要负责人及职务",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "respondent_phone",
+          "label": "被申请人联系电话",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "hire_date",
+          "label": "入职时间",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "position",
+          "label": "岗位/工种",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "claims",
+          "label": "仲裁请求",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "分项列明，金额与期间须具体明确"
+        },
+        {
+          "key": "facts",
+          "label": "事实和理由",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "劳动关系建立、争议经过、法律依据"
+        },
+        {
+          "key": "evidence",
+          "label": "证据和证据来源、证人姓名和住所",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "copies",
+          "label": "申请书副本份数",
+          "type": "text",
+          "required": false,
+          "placeholder": "按被申请人人数"
+        },
+        {
+          "key": "date",
+          "label": "落款日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 劳动争议仲裁申请书\n\n> {{watermark}}\n\n**申请人**：{{applicant_name}}  \n身份证号：{{applicant_id}}  \n住所地：{{applicant_address}}  \n联系电话：{{applicant_phone}}\n\n**被申请人**：{{respondent_name}}  \n住所地：{{respondent_address}}\n\n入职时间：{{hire_date}}  \n岗位：{{position}}\n\n## 仲裁请求\n\n{{claims}}\n\n## 事实与理由\n\n{{facts}}\n\n此致  \n**{{commission}}**\n\n申请人：{{applicant_name}}  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 劳动人事争议仲裁申请书\n\n> {{watermark}}\n\n**申请人**：{{applicant_name}}，{{applicant_gender}}，{{applicant_birth}}生，{{applicant_nation}}，身份证号码：{{applicant_id}}，户籍所在地：{{applicant_hukou}}，现住址（有效通讯地址）：{{applicant_address}}，联系电话：{{applicant_phone}}。\n\n**被申请人**：{{respondent_name}}，统一社会信用代码：{{respondent_credit}}，住所地：{{respondent_address}}，法定代表人（主要负责人）：{{respondent_legal}}，联系电话：{{respondent_phone}}。\n\n入职时间：{{hire_date}}　岗位/工种：{{position}}\n\n**仲裁请求：**\n\n{{claims}}\n\n**事实和理由：**\n\n{{facts}}\n\n**证据和证据来源，证人姓名和住所：**\n\n{{evidence}}\n\n此致  \n**{{commission}}**\n\n申请人（签名捺印）：{{applicant_name}}  \n{{date}}\n\n附：本申请书副本{{copies}}份。\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "user",
+        "lawyer",
+        "judge",
+        "prosecutor"
+      ]
     },
     {
       "id": "divorce_agreement",
-      "name": "离婚协议（框架）",
+      "name": "离婚协议书",
       "category": "婚姻家事",
-      "description": "协议离婚框架稿，子女抚养、财产分割等条款需律师审定。",
+      "description": "结构参考民政部门《离婚协议书》参考样板（自愿离婚、子女、财产、债务）。",
       "fields": [
-        {"key": "party_a", "label": "甲方（男/女方）姓名", "type": "text", "required": true},
-        {"key": "party_a_id", "label": "甲方身份证号", "type": "text", "required": false},
-        {"key": "party_b", "label": "乙方（女/男方）姓名", "type": "text", "required": true},
-        {"key": "party_b_id", "label": "乙方身份证号", "type": "text", "required": false},
-        {"key": "marriage_date", "label": "结婚登记日期", "type": "text", "required": false},
-        {"key": "children", "label": "子女情况与抚养安排", "type": "textarea", "required": false, "placeholder": "姓名、出生日期、直接抚养方、探视、抚养费等"},
-        {"key": "property", "label": "财产分割约定", "type": "textarea", "required": true},
-        {"key": "debts", "label": "债务处理约定", "type": "textarea", "required": false},
-        {"key": "other", "label": "其他约定", "type": "textarea", "required": false},
-        {"key": "date", "label": "签署日期", "type": "text", "required": false}
+        {
+          "key": "party_a",
+          "label": "男方姓名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "party_a_id",
+          "label": "男方身份证件号码",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "party_a_address",
+          "label": "男方住址",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "party_b",
+          "label": "女方姓名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "party_b_id",
+          "label": "女方身份证件号码",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "party_b_address",
+          "label": "女方住址",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "marriage_date",
+          "label": "结婚登记日期",
+          "type": "text",
+          "required": true,
+          "placeholder": "××××年××月××日"
+        },
+        {
+          "key": "registry",
+          "label": "结婚登记机关",
+          "type": "text",
+          "required": false,
+          "placeholder": "某某民政局"
+        },
+        {
+          "key": "reason",
+          "label": "离婚原因",
+          "type": "text",
+          "required": false,
+          "placeholder": "如：感情破裂、性格不合"
+        },
+        {
+          "key": "children",
+          "label": "子女抚养、探视及抚养费约定",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "无共同子女须写明「双方无共同子女」"
+        },
+        {
+          "key": "property",
+          "label": "夫妻共同财产处理",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "房产写明地址；无财产写明「双方无共同财产」"
+        },
+        {
+          "key": "debts",
+          "label": "债权债务处理",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "无共同债权债务须写明"
+        },
+        {
+          "key": "other",
+          "label": "其他约定",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "date",
+          "label": "签署日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 离婚协议书（框架稿）\n\n> {{watermark}}\n\n甲方：{{party_a}}（身份证号：{{party_a_id}}）  \n乙方：{{party_b}}（身份证号：{{party_b_id}}）\n\n双方于 {{marriage_date}} 登记结婚，现因感情破裂自愿协议离婚，并达成如下协议：\n\n## 一、离婚意思表示\n\n双方自愿离婚，同意解除婚姻关系。\n\n## 二、子女抚养\n\n{{children}}\n\n## 三、财产分割\n\n{{property}}\n\n## 四、债务处理\n\n{{debts}}\n\n## 五、其他约定\n\n{{other}}\n\n本协议一式三份，甲乙双方各执一份，婚姻登记机关存档一份。\n\n甲方签字：____________  乙方签字：____________  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 离婚协议书\n\n> {{watermark}}\n\n**男方**：{{party_a}}，身份证件号码：{{party_a_id}}，住址：{{party_a_address}}。\n\n**女方**：{{party_b}}，身份证件号码：{{party_b_id}}，住址：{{party_b_address}}。\n\n我们双方于{{marriage_date}}在{{registry}}登记结婚。婚后因{{reason}}，经双方协议达成离婚意愿，并对子女、财产、债务等事项协商一致，协议如下：\n\n**一、自愿离婚**\n\n{{party_a}}与{{party_b}}自愿离婚。\n\n**二、子女抚养安排**\n\n{{children}}\n\n**三、夫妻共同财产处理**\n\n{{property}}\n\n**四、债权债务处理**\n\n{{debts}}\n\n**五、其他约定**\n\n{{other}}\n\n**六、效力与份数**\n\n1. 本协议书为双方自愿签订，对男女双方均有法律约束力，违约方应负法律责任。  \n2. 本协议自双方取得《离婚证》之日起生效。  \n3. 本协议一式三份，男女双方各持一份，婚姻登记机关存档一份。\n\n我们自愿离婚，双方均具有完全民事行为能力，完全同意本协议书的各项安排，亦无其它不同意见。\n\n男方（签名）：____________　　女方（签名）：____________  \n日期：{{date}}　　　　　　　　日期：{{date}}\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "user",
+        "lawyer",
+        "judge",
+        "prosecutor"
+      ]
     },
     {
       "id": "lease_supplement",
-      "name": "租赁合同补充协议",
+      "name": "房屋租赁合同补充协议",
       "category": "房屋租赁",
-      "description": "对既有房屋租赁合同的补充/变更条款。",
+      "description": "常用房屋租赁合同补充/变更协议结构（当事人、鉴于条款、变更内容、效力）。",
       "fields": [
-        {"key": "landlord", "label": "出租人", "type": "text", "required": true},
-        {"key": "tenant", "label": "承租人", "type": "text", "required": true},
-        {"key": "original_contract", "label": "原合同编号/签订日期", "type": "text", "required": true},
-        {"key": "address", "label": "租赁房屋地址", "type": "text", "required": true},
-        {"key": "changes", "label": "补充/变更内容", "type": "textarea", "required": true, "placeholder": "如租金调整、租期延长、押金处理等"},
-        {"key": "effective_date", "label": "本补充协议生效日", "type": "text", "required": false},
-        {"key": "date", "label": "签署日期", "type": "text", "required": false}
+        {
+          "key": "landlord",
+          "label": "出租人（甲方）",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "landlord_id",
+          "label": "甲方证件号/信用代码",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "tenant",
+          "label": "承租人（乙方）",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "tenant_id",
+          "label": "乙方证件号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "original_contract",
+          "label": "原合同名称及签订日期/编号",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "address",
+          "label": "租赁房屋坐落",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "changes",
+          "label": "补充/变更条款",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "分条写明租金、租期、押金、维修等变更"
+        },
+        {
+          "key": "effective_date",
+          "label": "本补充协议生效日",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "date",
+          "label": "签署日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 房屋租赁合同补充协议\n\n> {{watermark}}\n\n出租人（甲方）：{{landlord}}  \n承租人（乙方）：{{tenant}}\n\n鉴于双方于 {{original_contract}} 就位于 **{{address}}** 的房屋签订《房屋租赁合同》，现经协商一致，订立本补充协议：\n\n## 补充/变更条款\n\n{{changes}}\n\n## 效力\n\n1. 本补充协议自 {{effective_date}} 起生效（未填写则以双方签署之日为准）。  \n2. 本协议与原合同不一致的，以本协议为准；未变更部分继续有效。  \n3. 本协议一式两份，甲乙双方各执一份，具有同等法律效力。\n\n甲方签字/盖章：____________  乙方签字/盖章：____________  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 房屋租赁合同补充协议\n\n> {{watermark}}\n\n**甲方（出租人）**：{{landlord}}（证件号/信用代码：{{landlord_id}}）  \n**乙方（承租人）**：{{tenant}}（证件号：{{tenant_id}}）\n\n**鉴于：**\n\n甲、乙双方于{{original_contract}}就坐落于**{{address}}**的房屋签订《房屋租赁合同》（下称「原合同」）。现双方经协商一致，就原合同未尽事宜或变更事项订立本补充协议，以资共同遵守。\n\n**第一条　补充/变更内容**\n\n{{changes}}\n\n**第二条　效力**\n\n1. 本补充协议是原合同的组成部分，与原合同具有同等法律效力。  \n2. 本补充协议与原合同约定不一致的，以本补充协议为准；本补充协议未约定的，仍按原合同执行。  \n3. 本补充协议自{{effective_date}}起生效（未填写则以双方签字/盖章之日为准）。  \n4. 本协议一式贰份，甲乙双方各执壹份，具有同等法律效力。\n\n甲方（签字/盖章）：____________　　乙方（签字/盖章）：____________  \n日期：{{date}}　　　　　　　　　　日期：{{date}}\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "user",
+        "lawyer",
+        "judge",
+        "prosecutor"
+      ]
     },
     {
       "id": "consumer_complaint",
       "name": "消费投诉书",
       "category": "消费维权",
-      "description": "向经营者、消协或市场监管部门提交的投诉材料框架。",
+      "description": "结构依据中消协《受理消费者投诉工作导则》对投诉材料要素的要求。",
       "fields": [
-        {"key": "recipient", "label": "投诉对象/受理单位", "type": "text", "required": true, "placeholder": "经营者名称 / 消费者协会 / 市场监管局"},
-        {"key": "complainant", "label": "投诉人姓名", "type": "text", "required": true},
-        {"key": "phone", "label": "联系电话", "type": "text", "required": false},
-        {"key": "address", "label": "联系地址", "type": "text", "required": false},
-        {"key": "merchant", "label": "被投诉经营者", "type": "text", "required": true},
-        {"key": "purchase_info", "label": "消费时间/地点/金额", "type": "text", "required": true},
-        {"key": "problem", "label": "问题描述", "type": "textarea", "required": true},
-        {"key": "demands", "label": "投诉请求", "type": "textarea", "required": true},
-        {"key": "date", "label": "落款日期", "type": "text", "required": false}
+        {
+          "key": "recipient",
+          "label": "受理单位",
+          "type": "text",
+          "required": true,
+          "placeholder": "某某消费者协会 / 市场监督管理局"
+        },
+        {
+          "key": "complainant",
+          "label": "投诉人姓名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "complainant_id",
+          "label": "投诉人身份证号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "phone",
+          "label": "联系电话",
+          "type": "text",
+          "required": true,
+          "placeholder": "11位手机号"
+        },
+        {
+          "key": "address",
+          "label": "联系地址/邮编",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "merchant",
+          "label": "被投诉经营者名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "merchant_address",
+          "label": "被投诉人地址",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "merchant_contact",
+          "label": "被投诉人联系人及电话",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "purchase_info",
+          "label": "购买/接受服务的时间、地点、品名、规格、数量、价格",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "problem",
+          "label": "损害事实、争议过程及与经营者协商情况",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "demands",
+          "label": "明确、具体的投诉请求",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "修理/更换/退货/退款/赔偿等"
+        },
+        {
+          "key": "evidence",
+          "label": "证据清单",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "发票、订单、聊天记录等"
+        },
+        {
+          "key": "date",
+          "label": "落款日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 消费投诉书\n\n> {{watermark}}\n\n**投诉人**：{{complainant}}  \n联系电话：{{phone}}  \n联系地址：{{address}}\n\n**被投诉方**：{{merchant}}\n\n消费情况：{{purchase_info}}\n\n## 问题描述\n\n{{problem}}\n\n## 投诉请求\n\n{{demands}}\n\n此致  \n**{{recipient}}**\n\n投诉人：{{complainant}}  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 投诉书\n\n> {{watermark}}\n\n**投诉人**：{{complainant}}，身份证号码：{{complainant_id}}，联系地址：{{address}}，联系电话：{{phone}}。\n\n**被投诉人**：{{merchant}}，地址：{{merchant_address}}，联系人及电话：{{merchant_contact}}。\n\n**一、消费基本情况**\n\n{{purchase_info}}\n\n**二、事实与理由**\n\n{{problem}}\n\n**三、投诉请求**\n\n{{demands}}\n\n**四、证据材料**\n\n{{evidence}}\n\n此致  \n**{{recipient}}**\n\n投诉人（签名）：{{complainant}}  \n{{date}}\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "user",
+        "lawyer",
+        "judge",
+        "prosecutor"
+      ]
     },
     {
       "id": "lawyer_letter",
-      "name": "律师函（框架）",
+      "name": "律师函",
       "category": "律师文书",
-      "description": "催告/维权律师函框架，正式发出须由执业律师署名。",
+      "description": "结构参考地方律师协会《律师函》业务指引（函号、委托声明、事实、法律分析、要求与期限）。",
       "fields": [
-        {"key": "addressee", "label": "收函方", "type": "text", "required": true},
-        {"key": "client_name", "label": "委托人", "type": "text", "required": true},
-        {"key": "law_firm", "label": "拟出具律所（可填「待定」）", "type": "text", "required": false, "placeholder": "某某律师事务所"},
-        {"key": "lawyer_name", "label": "拟承办律师（可填「待定」）", "type": "text", "required": false},
-        {"key": "facts", "label": "基本事实", "type": "textarea", "required": true},
-        {"key": "legal_basis", "label": "法律依据（摘要）", "type": "textarea", "required": false},
-        {"key": "demands", "label": "函告要求与期限", "type": "textarea", "required": true},
-        {"key": "date", "label": "发函日期", "type": "text", "required": false}
+        {
+          "key": "doc_no",
+          "label": "函号",
+          "type": "text",
+          "required": false,
+          "placeholder": "（××××）××律函字第××号"
+        },
+        {
+          "key": "addressee",
+          "label": "收函方",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "client_name",
+          "label": "委托人",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "law_firm",
+          "label": "律师事务所",
+          "type": "text",
+          "required": true,
+          "placeholder": "某某律师事务所"
+        },
+        {
+          "key": "lawyer_name",
+          "label": "承办律师",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "matter",
+          "label": "事由摘要",
+          "type": "text",
+          "required": false,
+          "placeholder": "如：拖欠货款事宜"
+        },
+        {
+          "key": "facts",
+          "label": "委托人陈述的基本事实",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "legal_basis",
+          "label": "法律分析及法律后果",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "demands",
+          "label": "解决问题的方法及建议（要求与期限）",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "请于收函后×日内……"
+        },
+        {
+          "key": "lawyer_phone",
+          "label": "律师联系方式",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "date",
+          "label": "发函日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 律师函（框架稿）\n\n> {{watermark}}\n\n致：**{{addressee}}**\n\n本所接受 **{{client_name}}** 委托，指派律师就相关事宜致函如下：\n\n## 一、基本事实\n\n{{facts}}\n\n## 二、法律依据\n\n{{legal_basis}}\n\n## 三、律师意见与要求\n\n{{demands}}\n\n如贵方未在合理期限内妥善处理，委托人将依法采取仲裁、诉讼等法律手段维护自身合法权益，由此产生的费用由贵方承担。\n\n特此函告。\n\n{{law_firm}}  \n律师：{{lawyer_name}}  \n日期：{{date}}\n\n---\n{{disclaimer}}\n**特别提示**：本函为 AI 框架稿，正式律师函须由执业律师审核并署名发出。\n"
+      "body": "# 律师函\n\n> {{watermark}}\n\n{{doc_no}}\n\n**{{addressee}}：**\n\n{{law_firm}}（以下简称「本所」）系依法设立的律师事务所。本所受**{{client_name}}**（以下简称「委托人」）委托，指派本所**{{lawyer_name}}**律师就贵方与委托人之间**{{matter}}**一事，依据相关法律法规规定，特致函如下：\n\n**一、委托人陈述的基本事实**\n\n{{facts}}\n\n以上事实系根据委托人向本所提供的陈述及材料整理。\n\n**二、法律分析及法律后果**\n\n{{legal_basis}}\n\n**三、解决问题的方法及建议**\n\n为妥善解决上述纠纷、避免诉累，本律师建议：\n\n{{demands}}\n\n如贵方既不及时回复，也不按上述方案履行，可能导致双方分歧加深，委托人将依法通过协商、调解、仲裁或诉讼等途径维护自身合法权益，并保留向贵方主张因此产生的合理费用的权利。请贵方慎重考虑。\n\n本律师函所依据的事实及证据系由委托人提供，且委托人已对其真实性、完整性、准确性负责；并不排除贵方与委托人对客观事实的认知有所出入。贵方如对本函涉及事实有异议，或对问题解决有其他合理建议，请直接与本律师联系。\n\n本律师函不得以任何方式被解释为委托人对权利作任何放弃、对义务作任何增加。\n\n特此函告。\n\n律师联系方式：{{lawyer_phone}}\n\n**{{law_firm}}**（盖章）  \n律师：{{lawyer_name}}（签名）  \n{{date}}\n\n---\n{{disclaimer}}  \n**特别提示**：正式律师函须由执业律师审核署名并由律师事务所盖章后发出。\n",
+      "audiences": [
+        "lawyer",
+        "user"
+      ]
     },
     {
       "id": "power_of_attorney",
       "name": "授权委托书",
       "category": "通用文书",
-      "description": "诉讼或非诉讼事务的授权委托框架。",
+      "description": "结构依据最高人民法院《授权委托书（公民委托诉讼代理人用）》样式。",
       "fields": [
-        {"key": "principal", "label": "委托人", "type": "text", "required": true},
-        {"key": "principal_id", "label": "委托人身份证/信用代码", "type": "text", "required": false},
-        {"key": "agent", "label": "受托人", "type": "text", "required": true},
-        {"key": "agent_id", "label": "受托人身份证号", "type": "text", "required": false},
-        {"key": "matter", "label": "委托事项", "type": "textarea", "required": true, "placeholder": "如：代理某某案一审诉讼"},
-        {"key": "powers", "label": "代理权限", "type": "textarea", "required": true, "placeholder": "一般授权 / 特别授权（承认、放弃、和解、上诉等）"},
-        {"key": "term", "label": "委托期限", "type": "text", "required": false, "placeholder": "自签署日起至本案终结止"},
-        {"key": "date", "label": "签署日期", "type": "text", "required": false}
+        {
+          "key": "principal",
+          "label": "委托人",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "principal_gender",
+          "label": "委托人性别",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "principal_birth",
+          "label": "委托人出生日期",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "principal_nation",
+          "label": "委托人民族",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "principal_job",
+          "label": "委托人工作单位和职务或职业",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "principal_address",
+          "label": "委托人住所地",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "principal_phone",
+          "label": "委托人联系方式",
+          "type": "text",
+          "required": false,
+          "placeholder": "11位手机号"
+        },
+        {
+          "key": "principal_id",
+          "label": "委托人身份证号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "agent",
+          "label": "受委托人",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "agent_firm",
+          "label": "受委托人单位",
+          "type": "text",
+          "required": false,
+          "placeholder": "××律师事务所律师 / 或写明与委托人关系"
+        },
+        {
+          "key": "agent_phone",
+          "label": "受委托人联系方式",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "case_info",
+          "label": "案件当事人及案由",
+          "type": "text",
+          "required": true,
+          "placeholder": "在……一案中"
+        },
+        {
+          "key": "powers",
+          "label": "委托事项与权限",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "一般授权或特别授权（承认、放弃、变更诉讼请求，和解，反诉，上诉等须特别授权）"
+        },
+        {
+          "key": "date",
+          "label": "签署日期",
+          "type": "text",
+          "required": false
+        }
       ],
-      "body": "# 授权委托书\n\n> {{watermark}}\n\n委托人：{{principal}}（证件号：{{principal_id}}）  \n受托人：{{agent}}（证件号：{{agent_id}}）\n\n现委托受托人办理下列事项：\n\n## 委托事项\n\n{{matter}}\n\n## 代理权限\n\n{{powers}}\n\n## 委托期限\n\n{{term}}\n\n委托人确认：受托人在代理权限内签署的有关文件，委托人均予以认可。\n\n委托人签字/盖章：____________  \n日期：{{date}}\n\n---\n{{disclaimer}}\n"
+      "body": "# 授权委托书\n\n> {{watermark}}\n\n**委托人**：{{principal}}，{{principal_gender}}，{{principal_birth}}出生，{{principal_nation}}，{{principal_job}}，住{{principal_address}}。联系方式：{{principal_phone}}。身份证号：{{principal_id}}。\n\n**受委托人**：{{agent}}，{{agent_firm}}，联系方式：{{agent_phone}}。\n\n现委托{{agent}}在**{{case_info}}**中，作为我方参加诉讼的委托诉讼代理人。\n\n**委托事项与权限如下：**\n\n{{powers}}\n\n（说明：代为承认、放弃、变更诉讼请求，进行和解，提起反诉或者上诉，必须有委托人的特别授权。）\n\n委托人（签名）：____________  \n{{date}}\n\n---\n{{disclaimer}}\n",
+      "audiences": [
+        "lawyer",
+        "user"
+      ]
+    },
+    {
+      "id": "judgment_outline",
+      "name": "民事判决书（结构草稿）",
+      "category": "审判文书",
+      "description": "结构依据最高人民法院《民事判决书（第一审普通程序用）》样式，供整理说理（非正式文书）。",
+      "audiences": [
+        "judge"
+      ],
+      "fields": [
+        {
+          "key": "court",
+          "label": "法院名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "case_no",
+          "label": "案号",
+          "type": "text",
+          "required": true,
+          "placeholder": "（××××）……民初……号"
+        },
+        {
+          "key": "parties",
+          "label": "当事人及其他诉讼参加人基本情况",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "procedure",
+          "label": "案件由来和审理经过",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "立案日期、程序、开庭方式、到庭人员等"
+        },
+        {
+          "key": "claims",
+          "label": "原告诉称（诉讼请求及事实理由）",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "defense",
+          "label": "被告辩称",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "third_party",
+          "label": "第三人诉/述称（如有）",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "facts",
+          "label": "本院认定的证据和事实",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "issues",
+          "label": "争议焦点",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "reasoning",
+          "label": "本院认为",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "laws",
+          "label": "裁判依据（法条）",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "依照《……法》第×条……规定"
+        },
+        {
+          "key": "judgment",
+          "label": "判决主文",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "分项写明"
+        },
+        {
+          "key": "fee",
+          "label": "案件受理费负担",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "appeal_court",
+          "label": "上诉法院",
+          "type": "text",
+          "required": false,
+          "placeholder": "某某中级人民法院"
+        },
+        {
+          "key": "judges",
+          "label": "审判人员署名",
+          "type": "text",
+          "required": false,
+          "placeholder": "审判长……　审判员……"
+        },
+        {
+          "key": "date",
+          "label": "判决日期",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "clerk",
+          "label": "书记员",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "body": "# {{court}}\n\n# 民事判决书\n\n{{case_no}}\n\n> {{watermark}}\n\n{{parties}}\n\n{{procedure}}\n\n{{claims}}\n\n{{defense}}\n\n{{third_party}}\n\n当事人围绕诉讼请求依法提交了证据，本院组织当事人进行了证据交换和质证。对当事人无异议的证据，本院予以确认并在卷佐证。对有争议的证据和事实，本院认定如下：\n\n{{facts}}\n\n争议焦点：{{issues}}\n\n本院认为，{{reasoning}}\n\n综上所述，……。依照{{laws}}规定，判决如下：\n\n{{judgment}}\n\n如果未按本判决指定的期间履行给付金钱义务，应当依照《中华人民共和国民事诉讼法》相关规定，加倍支付迟延履行期间的债务利息。\n\n案件受理费{{fee}}。\n\n如不服本判决，可以在判决书送达之日起十五日内，向本院递交上诉状，并按照对方当事人或者代表人的人数提出副本，上诉于**{{appeal_court}}**。\n\n{{judges}}  \n{{date}}  \n（院印）  \n书记员　{{clerk}}\n\n---\n{{disclaimer}}\n"
+    },
+    {
+      "id": "civil_ruling_outline",
+      "name": "民事裁定书（结构草稿）",
+      "category": "审判文书",
+      "description": "参考最高人民法院民事裁定书通用结构（当事人、裁定事项、事实理由、裁定主文、救济告知）。",
+      "audiences": [
+        "judge"
+      ],
+      "fields": [
+        {
+          "key": "court",
+          "label": "法院名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "case_no",
+          "label": "案号",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "parties",
+          "label": "当事人基本情况",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "matter",
+          "label": "裁定所涉申请/事项",
+          "type": "text",
+          "required": true,
+          "placeholder": "如：准许撤诉 / 管辖权异议 / 财产保全"
+        },
+        {
+          "key": "facts",
+          "label": "基本事实与审查情况",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "reason",
+          "label": "本院认为（裁定理由）",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "laws",
+          "label": "法律依据",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "result",
+          "label": "裁定主文",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "remedy",
+          "label": "救济告知",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "上诉/复议期限与受理法院"
+        },
+        {
+          "key": "judges",
+          "label": "审判人员",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "date",
+          "label": "裁定日期",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "clerk",
+          "label": "书记员",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "body": "# {{court}}\n\n# 民事裁定书\n\n{{case_no}}\n\n> {{watermark}}\n\n{{parties}}\n\n本院在审理{{matter}}过程中，查明：\n\n{{facts}}\n\n本院认为，{{reason}}\n\n依照{{laws}}规定，裁定如下：\n\n{{result}}\n\n{{remedy}}\n\n{{judges}}  \n{{date}}  \n（院印）  \n书记员　{{clerk}}\n\n---\n{{disclaimer}}\n"
+    },
+    {
+      "id": "indictment_outline",
+      "name": "起诉书（结构草稿）",
+      "category": "检察文书",
+      "description": "结构参考《人民检察院刑事诉讼法律文书格式样本》起诉书体例。",
+      "audiences": [
+        "prosecutor"
+      ],
+      "fields": [
+        {
+          "key": "procuratorate",
+          "label": "检察院名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "doc_no",
+          "label": "文号",
+          "type": "text",
+          "required": false,
+          "placeholder": "××检刑诉〔××××〕××号"
+        },
+        {
+          "key": "defendant",
+          "label": "被告人基本情况",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "姓名、性别、出生日期、身份证号、民族、文化程度、职业、住址、前科及强制措施等"
+        },
+        {
+          "key": "source",
+          "label": "案由和案件的审查过程",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "侦查机关、移送时间、退查等情况"
+        },
+        {
+          "key": "facts",
+          "label": "经依法审查查明的犯罪事实",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "evidence",
+          "label": "认定上述事实的证据",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "分种类列明：物证、书证、证人证言等"
+        },
+        {
+          "key": "charge",
+          "label": "起诉罪名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "law",
+          "label": "起诉的理由和根据",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "触犯刑法条款、应当追究刑事责任"
+        },
+        {
+          "key": "court",
+          "label": "受诉法院",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "date",
+          "label": "日期",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "body": "# {{procuratorate}}\n\n# 起　诉　书\n\n{{doc_no}}\n\n> {{watermark}}\n\n**被告人**　{{defendant}}\n\n{{source}}\n\n经依法审查查明：\n\n{{facts}}\n\n认定上述事实的证据如下：\n\n{{evidence}}\n\n本院认为，被告人的行为触犯了{{law}}，犯罪事实清楚，证据确实、充分，应当以**{{charge}}**追究其刑事责任。根据《中华人民共和国刑事诉讼法》第一百七十六条的规定，提起公诉，请依法判处。\n\n此致  \n**{{court}}**\n\n检察员：____________  \n{{date}}  \n（院印）\n\n附：1. 被告人现在处所；2. 案卷材料和证据；3. 证人、鉴定人名单等。\n\n---\n{{disclaimer}}\n"
+    },
+    {
+      "id": "non_prosecution_outline",
+      "name": "不起诉决定书（结构草稿）",
+      "category": "检察文书",
+      "description": "结构参考最高检不起诉决定书格式样本。",
+      "audiences": [
+        "prosecutor"
+      ],
+      "fields": [
+        {
+          "key": "procuratorate",
+          "label": "检察院名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "doc_no",
+          "label": "文号",
+          "type": "text",
+          "required": false,
+          "placeholder": "××检××刑不诉〔××××〕××号"
+        },
+        {
+          "key": "suspect",
+          "label": "被不起诉人基本情况",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "defender",
+          "label": "辩护人（如有）",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "source",
+          "label": "案由和案件来源",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "type",
+          "label": "不起诉类型",
+          "type": "text",
+          "required": true,
+          "placeholder": "法定不起诉 / 酌定不起诉 / 证据不足不起诉"
+        },
+        {
+          "key": "facts",
+          "label": "经本院依法审查查明",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "reason",
+          "label": "本院认为（不起诉理由）",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "law",
+          "label": "法律依据",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "依照《刑事诉讼法》……规定，决定不起诉"
+        },
+        {
+          "key": "property",
+          "label": "涉案财物处理情况",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "notice",
+          "label": "告知事项",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "申诉/自诉权利告知"
+        },
+        {
+          "key": "date",
+          "label": "日期",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "body": "# {{procuratorate}}\n\n# 不起诉决定书\n\n{{doc_no}}\n\n> {{watermark}}\n\n**被不起诉人**　{{suspect}}\n\n**辩护人**　{{defender}}\n\n{{source}}\n\n不起诉类型：{{type}}\n\n经本院依法审查查明：\n\n{{facts}}\n\n本院认为，{{reason}}\n\n依照{{law}}，决定对被不起诉人不起诉。\n\n{{property}}\n\n{{notice}}\n\n被害人如果不服本决定，可以自收到本决定书后七日以内向上一级人民检察院申诉，请求提起公诉；也可以不经申诉，直接向人民法院提起自诉。\n\n**{{procuratorate}}**  \n{{date}}  \n（院印）\n\n---\n{{disclaimer}}\n"
+    },
+    {
+      "id": "sentencing_suggest",
+      "name": "量刑建议书（结构草稿）",
+      "category": "检察文书",
+      "description": "参考检察机关量刑建议文书常用结构（被告人、指控罪名、量刑情节、建议幅度）。",
+      "audiences": [
+        "prosecutor"
+      ],
+      "fields": [
+        {
+          "key": "procuratorate",
+          "label": "检察院名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "doc_no",
+          "label": "文号",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "defendant",
+          "label": "被告人",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "charge",
+          "label": "指控罪名",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "baseline",
+          "label": "量刑起点与基准刑考量",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "aggravating",
+          "label": "从重处罚情节",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "mitigating",
+          "label": "从轻、减轻处罚情节",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "suggest",
+          "label": "量刑建议（主刑、附加刑、执行方式等）",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "law",
+          "label": "法律依据",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "date",
+          "label": "日期",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "body": "# {{procuratorate}}\n\n# 量刑建议书\n\n{{doc_no}}\n\n> {{watermark}}\n\n被告人：{{defendant}}  \n指控罪名：{{charge}}\n\n**一、量刑事实与情节**\n\n（一）量刑起点与基准刑考量\n\n{{baseline}}\n\n（二）从重处罚情节\n\n{{aggravating}}\n\n（三）从轻、减轻处罚情节\n\n{{mitigating}}\n\n**二、法律依据**\n\n{{law}}\n\n**三、量刑建议**\n\n综合全案事实、情节，建议对被告人{{defendant}}处以：\n\n{{suggest}}\n\n请法庭依法采纳。\n\n检察员：____________  \n{{date}}  \n（院印）\n\n---\n{{disclaimer}}\n"
+    },
+    {
+      "id": "lawyer_opinion_brief",
+      "name": "案件分析备忘录",
+      "category": "律师文书",
+      "description": "律师内部办案分析备忘常用结构（事实、请求权基础、争点、证据、风险、策略）。",
+      "audiences": [
+        "lawyer"
+      ],
+      "fields": [
+        {
+          "key": "client",
+          "label": "委托人",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "opponent",
+          "label": "相对方",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "matter",
+          "label": "案由/事项",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "facts",
+          "label": "基本事实摘要",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "claims_basis",
+          "label": "请求权基础/抗辩路径",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "issues",
+          "label": "主要争点",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "evidence",
+          "label": "证据状况与补强方向",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "risks",
+          "label": "风险点与不利后果",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "plan",
+          "label": "下一步工作安排",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "author",
+          "label": "拟稿人",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "date",
+          "label": "日期",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "body": "# 案件分析备忘录\n\n> {{watermark}}\n\n**委托人**：{{client}}  \n**相对方**：{{opponent}}  \n**案由/事项**：{{matter}}  \n**拟稿人**：{{author}}　**日期**：{{date}}\n\n**一、基本事实**\n\n{{facts}}\n\n**二、请求权基础 / 抗辩路径**\n\n{{claims_basis}}\n\n**三、主要争点**\n\n{{issues}}\n\n**四、证据状况与补强**\n\n{{evidence}}\n\n**五、风险提示**\n\n{{risks}}\n\n**六、下一步工作**\n\n{{plan}}\n\n---\n{{disclaimer}}  \n（本稿为律师内部工作备忘，非正式法律意见书。）\n"
     }
   ]
 }

@@ -24,11 +24,13 @@ from app.schemas.admin import (
     AdminPermItem,
     AdminUserItem,
     AdminUserListResponse,
+    DashboardResponse,
     SetRoleRequest,
     SystemStatusResponse,
     UserStatsResponse,
 )
-from app.schemas.feedback import FeedbackAdminItem, FeedbackAdminList
+from app.schemas.feedback import FeedbackAdminDetail, FeedbackAdminItem, FeedbackAdminList
+from app.services.admin_dashboard import build_dashboard
 from app.services.audit import log_action
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -92,6 +94,15 @@ def admin_stats(_: dict = Depends(require_perm("stats"))) -> UserStatsResponse:
     )
 
 
+@router.get("/dashboard", response_model=DashboardResponse)
+def admin_dashboard(
+    days: int = 14,
+    _: dict = Depends(require_perm("stats")),
+) -> DashboardResponse:
+    """运营数据看板：汇总 + 近 N 日趋势 + 角色分布 + 知识库分类。"""
+    return DashboardResponse(**build_dashboard(days=days))
+
+
 @router.get("/status", response_model=SystemStatusResponse)
 def system_status(_: dict = Depends(require_perm("status"))) -> SystemStatusResponse:
     """系统状态：模型、OCR、向量库路径、LLM 配置。"""
@@ -125,8 +136,8 @@ def set_user_role(
     """设置角色。把他人设为管理员并分配板块仅根管理员 tys 可以。"""
     if str(admin["id"]) == str(user_id):
         raise AppError("不能修改自己的角色", 400)
-    if role not in ("admin", "user", "lawyer"):
-        raise AppError("角色只能是 admin、user 或 lawyer", 400)
+    if role not in ("admin", "user", "lawyer", "judge", "prosecutor"):
+        raise AppError("角色只能是 admin、user、lawyer、judge 或 prosecutor", 400)
     target = db.query_one("SELECT username, role FROM users WHERE id = ?", (user_id,))
     if not target:
         raise AppError("用户不存在", 404)
@@ -255,3 +266,15 @@ def admin_feedbacks(
         useless=stats["useless"],
         items=[FeedbackAdminItem(**x) for x in items],
     )
+
+
+@router.get("/feedbacks/{feedback_id}", response_model=FeedbackAdminDetail)
+def admin_feedback_detail(
+    feedback_id: int,
+    _: dict = Depends(require_perm("feedbacks")),
+) -> FeedbackAdminDetail:
+    """抽检单条反馈：看用户问了什么、系统答了什么、为何这样评。"""
+    detail = feedback_repo.get_feedback_detail(feedback_id)
+    if not detail:
+        raise AppError("反馈不存在", 404)
+    return FeedbackAdminDetail(**detail)

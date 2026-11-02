@@ -1,8 +1,10 @@
-// 管理后台视图（仅 admin 可见）：用户管理 + 系统统计 + 系统状态
+// 运营控制台：侧栏分模块 · 总览待办 · 律师审核工作台 · 用户/知识库/反馈/运维
 
 import {
+  Fragment,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -11,11 +13,13 @@ import {
 import { createPortal } from "react-dom";
 import { api } from "../api/client";
 import { useDocuments } from "../hooks/useDocuments";
+import AdminDashboard from "./AdminDashboard";
 import type {
   AdminAccess,
   AdminLogItem,
-  AdminStats,
   AdminUserItem,
+  DashboardData,
+  FeedbackDetail,
   FeedbackItem,
   LawyerProfile,
   SnapshotItem,
@@ -23,12 +27,43 @@ import type {
 } from "../api/types";
 
 type PermMenu = { user: AdminUserItem; picked: string[] };
+type AdminNav =
+  | "overview"
+  | "lawyers"
+  | "users"
+  | "kb"
+  | "feedbacks"
+  | "ops";
+type LawyerSub = "pending" | "approved";
+type OpsSub = "status" | "backups" | "logs";
+
+interface AdminPanelProps {
+  username?: string;
+  onLogout?: () => void;
+}
+
+const NAV: { id: AdminNav; label: string; icon: string; perm?: string; desc: string }[] = [
+  { id: "overview", label: "运营总览", icon: "▣", desc: "数据看板 · 趋势与分布" },
+  { id: "lawyers", label: "职业认证", icon: "⚖", perm: "lawyers", desc: "审核律师/法官/检察官材料" },
+  { id: "users", label: "用户与权限", icon: "◎", perm: "users", desc: "账号管理与管理员授权" },
+  { id: "kb", label: "知识库", icon: "☰", perm: "kb", desc: "法规入库、检索片段维护" },
+  { id: "feedbacks", label: "问答反馈", icon: "◈", perm: "feedbacks", desc: "用户对回答的评价与抽检" },
+  { id: "ops", label: "系统运维", icon: "⚙", desc: "状态 · 备份 · 操作日志" },
+];
+
+const PROF_LABEL: Record<string, string> = {
+  lawyer: "律师",
+  judge: "法官",
+  prosecutor: "检察官",
+};
 
 function matchLawyer(p: LawyerProfile, q: string): boolean {
   if (!q) return true;
   const hay = [
     p.username || "",
     String(p.user_id),
+    p.profession || "",
+    PROF_LABEL[p.profession || ""] || "",
     p.license_no || "",
     p.region || "",
     ...(p.specialties || []),
@@ -48,19 +83,27 @@ function paginate<T>(items: T[], page: number, pageSize: number) {
   };
 }
 
-export default function AdminPanel() {
+export default function AdminPanel({ username = "", onLogout }: AdminPanelProps) {
+  const [nav, setNav] = useState<AdminNav>("overview");
+  const [lawyerSub, setLawyerSub] = useState<LawyerSub>("pending");
+  const [opsSub, setOpsSub] = useState<OpsSub>("status");
   const [access, setAccess] = useState<AdminAccess | null>(null);
   const [users, setUsers] = useState<AdminUserItem[]>([]);
-  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [dashDays, setDashDays] = useState(14);
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [pendingLawyers, setPendingLawyers] = useState<LawyerProfile[]>([]);
   const [approvedLawyers, setApprovedLawyers] = useState<LawyerProfile[]>([]);
   const [lawyerDetailId, setLawyerDetailId] = useState<number | null>(null);
+  const [selectedPending, setSelectedPending] = useState<number[]>([]);
+  const [batchBusy, setBatchBusy] = useState(false);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [fbStats, setFbStats] = useState({ total: 0, useful: 0, useless: 0 });
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user" | "lawyer">("all");
+  const [roleFilter, setRoleFilter] = useState<
+    "all" | "admin" | "user" | "lawyer" | "judge" | "prosecutor"
+  >("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [pendingSearch, setPendingSearch] = useState("");
@@ -70,21 +113,90 @@ export default function AdminPanel() {
   const [approvedPage, setApprovedPage] = useState(1);
   const [approvedPageSize, setApprovedPageSize] = useState(10);
   const [menu, setMenu] = useState<PermMenu | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const [fbFilter, setFbFilter] = useState<"all" | "useful" | "useless">("all");
+  const [fbOpenId, setFbOpenId] = useState<number | null>(null);
+  const [fbDetail, setFbDetail] = useState<FeedbackDetail | null>(null);
+  const [fbDetailLoading, setFbDetailLoading] = useState(false);
 
   const can = useCallback(
     (key: string) => !!access && (access.is_root || access.permissions.includes(key)),
     [access],
   );
 
+  const roleMix = useMemo(() => {
+    const mix = { user: 0, lawyer: 0, judge: 0, prosecutor: 0, admin: 0 };
+    for (const u of users) {
+      if (u.role === "lawyer") mix.lawyer += 1;
+      else if (u.role === "judge") mix.judge += 1;
+      else if (u.role === "prosecutor") mix.prosecutor += 1;
+      else if (u.role === "admin") mix.admin += 1;
+      else mix.user += 1;
+    }
+    return mix;
+  }, [users]);
+
+  const filteredFeedbacks = useMemo(() => {
+    if (fbFilter === "all") return feedbacks;
+    return feedbacks.filter((f) => f.rating === fbFilter);
+  }, [feedbacks, fbFilter]);
+
+  const toggleFeedbackDetail = async (id: number) => {
+    if (fbOpenId === id) {
+      setFbOpenId(null);
+      setFbDetail(null);
+      return;
+    }
+    setFbOpenId(id);
+    setFbDetail(null);
+    setFbDetailLoading(true);
+    try {
+      const d = await api.adminFeedbackDetail(id);
+      setFbDetail(d);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载反馈详情失败");
+      setFbOpenId(null);
+    } finally {
+      setFbDetailLoading(false);
+    }
+  };
+
+  const visibleNav = useMemo(
+    () =>
+      NAV.filter((item) => {
+        if (!item.perm) {
+          if (item.id === "ops") {
+            return can("status") || can("backups") || can("logs");
+          }
+          if (item.id === "overview") {
+            return can("stats") || can("lawyers") || can("feedbacks") || can("status");
+          }
+          return true;
+        }
+        return can(item.perm);
+      }),
+    [can],
+  );
+
+  useEffect(() => {
+    if (!visibleNav.some((n) => n.id === nav) && visibleNav[0]) {
+      setNav(visibleNav[0].id);
+    }
+  }, [visibleNav, nav]);
+
   const refresh = useCallback(async () => {
     setError(null);
+    setRefreshing(true);
     try {
       const acc = await api.adminAccess();
       setAccess(acc);
       const allow = (key: string) => acc.is_root || acc.permissions.includes(key);
-      const [u, s, st, lw, ap, fb] = await Promise.all([
+      const [u, dash, st, lw, ap, fb] = await Promise.all([
         allow("users") ? api.adminUsers() : Promise.resolve({ users: [] as AdminUserItem[] }),
-        allow("stats") ? api.adminStats() : Promise.resolve(null),
+        allow("stats")
+          ? api.adminDashboard(dashDays).catch(() => null)
+          : Promise.resolve(null),
         allow("status") ? api.adminStatus() : Promise.resolve(null),
         allow("lawyers")
           ? api.adminLawyerPending().catch(() => ({ items: [] as LawyerProfile[] }))
@@ -93,24 +205,68 @@ export default function AdminPanel() {
           ? api.adminLawyerApproved().catch(() => ({ items: [] as LawyerProfile[] }))
           : Promise.resolve({ items: [] as LawyerProfile[] }),
         allow("feedbacks")
-          ? api.adminFeedbacks(50).catch(() => ({ total: 0, useful: 0, useless: 0, items: [] as FeedbackItem[] }))
+          ? api
+              .adminFeedbacks(80)
+              .catch(() => ({ total: 0, useful: 0, useless: 0, items: [] as FeedbackItem[] }))
           : Promise.resolve({ total: 0, useful: 0, useless: 0, items: [] as FeedbackItem[] }),
       ]);
       setUsers(u.users);
-      setStats(s);
+      if (dash) setDashboard(dash);
       setStatus(st);
       setPendingLawyers(lw.items || []);
       setApprovedLawyers(ap.items || []);
+      setSelectedPending([]);
       setFeedbacks(fb.items || []);
       setFbStats({ total: fb.total, useful: fb.useful, useless: fb.useless });
+      setLastSynced(
+        new Date().toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
+    } finally {
+      setRefreshing(false);
     }
-  }, []);
+  }, [dashDays]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const loadDashboard = (days: number) => {
+    setDashDays(days);
+  };
+
+  const batchReview = async (approve: boolean) => {
+    if (selectedPending.length === 0) return;
+    const action = approve ? "通过" : "驳回";
+    if (!confirm(`确定批量${action}选中的 ${selectedPending.length} 份申请？`)) return;
+    setBatchBusy(true);
+    setError(null);
+    try {
+      const r = await api.adminLawyerBatchReview(
+        selectedPending,
+        approve,
+        approve ? "" : "材料不完整",
+      );
+      window.dispatchEvent(
+        new CustomEvent("app:toast", {
+          detail: {
+            message: `批量${action}完成：成功 ${r.ok}，失败 ${r.fail}`,
+            type: r.fail ? "warn" : "success",
+          },
+        }),
+      );
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "批量审核失败");
+    } finally {
+      setBatchBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!menu) return;
@@ -201,18 +357,33 @@ export default function AdminPanel() {
     );
   };
 
-  // 用户搜索 + 角色过滤 + 分页
   const q = search.trim().toLowerCase();
   const filteredUsers = users.filter((u) => {
     if (roleFilter !== "all" && u.role !== roleFilter) return false;
     if (!q) return true;
     return (
-      u.username.toLowerCase().includes(q) ||
-      String(u.id).includes(q) ||
-      u.role.includes(q)
+      u.username.toLowerCase().includes(q) || String(u.id).includes(q) || u.role.includes(q)
     );
   });
   const { pageCount, safePage, slice: pagedUsers } = paginate(filteredUsers, page, pageSize);
+
+  const exportUsersCsv = () => {
+    const header = ["id", "username", "role", "sessions", "messages", "created_at"];
+    const rows = filteredUsers.map((u) =>
+      [u.id, u.username, u.role, u.session_count, u.message_count, u.created_at]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const blob = new Blob([[header.join(","), ...rows].join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const pendingQ = pendingSearch.trim().toLowerCase();
   const filteredPending = pendingLawyers.filter((p) => matchLawyer(p, pendingQ));
@@ -229,6 +400,9 @@ export default function AdminPanel() {
     safePage: approvedSafePage,
     slice: pagedApproved,
   } = paginate(filteredApproved, approvedPage, approvedPageSize);
+
+  const usefulRate =
+    fbStats.total > 0 ? Math.round((fbStats.useful / fbStats.total) * 100) : null;
 
   const renderListToolbar = (
     value: string,
@@ -289,337 +463,854 @@ export default function AdminPanel() {
       </div>
     ) : null;
 
-  return (
-    <div className="admin-panel">
-      <div className="admin-head">
-        <h2>🛡️ 管理后台</h2>
-        <button className="btn-ghost btn-sm" onClick={refresh}>
-          刷新
-        </button>
-      </div>
-      {error && <div className="err-text">{error}</div>}
+  const pageMeta = NAV.find((n) => n.id === nav);
 
-      {can("stats") && stats && (
-        <div className="admin-stats">
-          <div className="stat-card">
-            <div className="stat-num">{stats.user_count}</div>
-            <div className="stat-label">用户</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-num">{stats.session_count}</div>
-            <div className="stat-label">会话</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-num">{stats.message_count}</div>
-            <div className="stat-label">消息</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-num">{stats.doc_count}</div>
-            <div className="stat-label">文档</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-num">{stats.chunk_count}</div>
-            <div className="stat-label">检索块</div>
+  return (
+    <div className="admin-console">
+      <aside className="ac-nav">
+        <div className="ac-brand">
+          <div className="ac-brand-mark">法</div>
+          <div>
+            <div className="ac-brand-title">运营控制台</div>
+            <div className="ac-brand-sub">
+              {access?.is_root ? "根管理员" : "管理员"}
+              {username ? ` · ${username}` : ""}
+            </div>
           </div>
         </div>
-      )}
+        <nav className="ac-nav-list" aria-label="后台模块">
+          {visibleNav.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`ac-nav-item ${nav === item.id ? "active" : ""}`}
+              onClick={() => setNav(item.id)}
+            >
+              <span className="ac-nav-ico" aria-hidden>
+                {item.icon}
+              </span>
+              <span className="ac-nav-label">{item.label}</span>
+              {item.id === "lawyers" && pendingLawyers.length > 0 && (
+                <span className="ac-nav-badge">{pendingLawyers.length}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="ac-nav-foot">
+          {lastSynced && <div className="ac-sync">最近同步 {lastSynced}</div>}
+          <button
+            type="button"
+            className="ac-btn-refresh"
+            disabled={refreshing}
+            onClick={() => void refresh()}
+          >
+            {refreshing ? "同步中…" : "刷新数据"}
+          </button>
+          {onLogout && (
+            <button type="button" className="ac-btn-logout" onClick={onLogout}>
+              退出登录
+            </button>
+          )}
+        </div>
+      </aside>
 
-      {can("lawyers") && (
-      <>
-      <div className="admin-section">
-        <h3>⚖️ 律师认证待审（{filteredPending.length}/{pendingLawyers.length}）</h3>
-        <p className="bk-hint">点「资料」展开证号与执业证附件；无附件多为演示/仅文本申请。</p>
-        {renderListToolbar(
-          pendingSearch,
-          (v) => {
-            setPendingSearch(v);
-            setPendingPage(1);
-          },
-          pendingPageSize,
-          (n) => {
-            setPendingPageSize(n);
-            setPendingPage(1);
-          },
-          "🔍 搜索用户名 / ID / 证号 / 地区 / 擅长…",
-        )}
-        {pendingLawyers.length === 0 ? (
-          <div className="bk-empty">暂无待审申请</div>
-        ) : (
-          <>
-            <div className="admin-users">
-              {filteredPending.length === 0 && <div className="bk-empty">无匹配结果</div>}
-              {pagedPending.map((p) => {
-                const open = lawyerDetailId === p.user_id;
-                const fileCount = (p.license_files || []).length;
-                return (
-                <div className="admin-user lawyer-row" key={p.user_id}>
-                  <div className="au-info">
-                    <span className="au-name">
-                      <span className="au-id">#{p.user_id}</span>
-                      {p.username || `用户#${p.user_id}`}
-                      <span className="admin-badge">待审</span>
-                      <span className="perm-tag">{fileCount ? `${fileCount} 份材料` : "无附件"}</span>
-                    </span>
-                    <span className="au-meta">
-                      证号 {p.license_no} · {p.region} · {(p.specialties || []).join("、") || "未填擅长"}
-                    </span>
-                    {open && (
-                      <div className="lawyer-detail">
-                        <div className="au-meta">用户 ID #{p.user_id}</div>
-                        {renderLawyerMaterials(p)}
+      <div className="ac-main">
+        <header className="ac-top">
+          <div>
+            <h2>{pageMeta?.label || "控制台"}</h2>
+            <p>{pageMeta?.desc}</p>
+          </div>
+          <div className="ac-top-right">
+            {nav === "lawyers" && can("lawyers") && (
+              <div className="ac-subtabs">
+                <button
+                  type="button"
+                  className={lawyerSub === "pending" ? "active" : ""}
+                  onClick={() => setLawyerSub("pending")}
+                >
+                  待审 {pendingLawyers.length}
+                </button>
+                <button
+                  type="button"
+                  className={lawyerSub === "approved" ? "active" : ""}
+                  onClick={() => setLawyerSub("approved")}
+                >
+                  已通过 {approvedLawyers.length}
+                </button>
+              </div>
+            )}
+            {nav === "ops" && (
+              <div className="ac-subtabs">
+                {can("status") && (
+                  <button
+                    type="button"
+                    className={opsSub === "status" ? "active" : ""}
+                    onClick={() => setOpsSub("status")}
+                  >
+                    系统状态
+                  </button>
+                )}
+                {can("backups") && (
+                  <button
+                    type="button"
+                    className={opsSub === "backups" ? "active" : ""}
+                    onClick={() => setOpsSub("backups")}
+                  >
+                    数据备份
+                  </button>
+                )}
+                {can("logs") && (
+                  <button
+                    type="button"
+                    className={opsSub === "logs" ? "active" : ""}
+                    onClick={() => setOpsSub("logs")}
+                  >
+                    操作日志
+                  </button>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              className="ac-top-refresh"
+              disabled={refreshing}
+              onClick={() => void refresh()}
+            >
+              {refreshing ? "同步中" : "同步"}
+            </button>
+          </div>
+        </header>
+
+        {error && <div className="err-text ac-error">{error}</div>}
+
+        <div className="ac-body">
+          {nav === "overview" && (
+            can("stats") ? (
+              dashboard ? (
+                <AdminDashboard
+                  data={dashboard}
+                  days={dashDays}
+                  onDaysChange={loadDashboard}
+                  onGoto={(id) => {
+                    if (id === "lawyers") {
+                      setNav("lawyers");
+                      setLawyerSub("pending");
+                    } else if (id === "ops") {
+                      setNav("ops");
+                      setOpsSub("status");
+                    } else {
+                      setNav(id);
+                    }
+                  }}
+                />
+              ) : (
+                <div className="bk-empty">看板数据加载中…</div>
+              )
+            ) : (
+              <div className="bk-empty">当前账号无「系统统计」权限，无法查看数据看板。</div>
+            )
+          )}
+
+          {nav === "lawyers" && can("lawyers") && (
+            <div className="admin-section ac-section-flush">
+              {lawyerSub === "pending" ? (
+                <>
+                  <p className="bk-hint">
+                    核对证号与附件后审核；通过后该账号固定进入对应职业工作台（律师/法官/检察官）。
+                  </p>
+                  {renderListToolbar(
+                    pendingSearch,
+                    (v) => {
+                      setPendingSearch(v);
+                      setPendingPage(1);
+                    },
+                    pendingPageSize,
+                    (n) => {
+                      setPendingPageSize(n);
+                      setPendingPage(1);
+                    },
+                    "搜索用户名 / ID / 证号 / 地区 / 擅长…",
+                  )}
+                  {pendingLawyers.length === 0 ? (
+                    <div className="bk-empty">暂无待审申请</div>
+                  ) : filteredPending.length === 0 ? (
+                    <div className="bk-empty">无匹配结果</div>
+                  ) : (
+                    <>
+                      <div className="lw-table-wrap">
+                        <table className="lw-table">
+                          <thead>
+                            <tr>
+                              <th className="lw-col-check">
+                                <input
+                                  type="checkbox"
+                                  aria-label="全选"
+                                  checked={filteredPending.every((p) =>
+                                    selectedPending.includes(p.user_id),
+                                  )}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedPending(filteredPending.map((p) => p.user_id));
+                                    } else {
+                                      setSelectedPending([]);
+                                    }
+                                  }}
+                                />
+                              </th>
+                              <th className="lw-col-user">申请人</th>
+                              <th className="lw-col-prof">职业</th>
+                              <th className="lw-col-license">证号</th>
+                              <th className="lw-col-region">地区</th>
+                              <th className="lw-col-spec">擅长</th>
+                              <th className="lw-col-files">材料</th>
+                              <th className="lw-col-actions">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pagedPending.map((p) => {
+                              const open = lawyerDetailId === p.user_id;
+                              const fileCount = (p.license_files || []).length;
+                              const checked = selectedPending.includes(p.user_id);
+                              const specs = (p.specialties || []).join("、") || "—";
+                              return (
+                                <Fragment key={p.user_id}>
+                                  <tr className={open ? "is-open" : undefined}>
+                                    <td className="lw-col-check">
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={(e) => {
+                                          setSelectedPending((prev) =>
+                                            e.target.checked
+                                              ? [...prev, p.user_id]
+                                              : prev.filter((id) => id !== p.user_id),
+                                          );
+                                        }}
+                                      />
+                                    </td>
+                                    <td className="lw-col-user">
+                                      <div className="lw-user">
+                                        <strong>{p.username || `用户#${p.user_id}`}</strong>
+                                        <span>#{p.user_id}</span>
+                                      </div>
+                                    </td>
+                                    <td className="lw-col-prof">
+                                      <span className="lw-prof-badge">
+                                        {PROF_LABEL[p.profession || "lawyer"] || "律师"}
+                                      </span>
+                                    </td>
+                                    <td className="lw-col-license">
+                                      <code>{p.license_no || "—"}</code>
+                                    </td>
+                                    <td className="lw-col-region">{p.region || "—"}</td>
+                                    <td className="lw-col-spec" title={specs}>
+                                      {specs}
+                                    </td>
+                                    <td className="lw-col-files">
+                                      <span className={fileCount ? "lw-file-ok" : "lw-file-none"}>
+                                        {fileCount ? `${fileCount} 份` : "无"}
+                                      </span>
+                                    </td>
+                                    <td className="lw-col-actions">
+                                      <div className="lw-ops">
+                                        <button
+                                          type="button"
+                                          className="lw-link"
+                                          onClick={() =>
+                                            setLawyerDetailId(open ? null : p.user_id)
+                                          }
+                                        >
+                                          {open ? "收起" : "资料"}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="lw-link ok"
+                                          onClick={() =>
+                                            void api
+                                              .adminLawyerReview(p.user_id, true)
+                                              .then(refresh)
+                                              .catch((e) =>
+                                                setError(
+                                                  e instanceof Error ? e.message : "审核失败",
+                                                ),
+                                              )
+                                          }
+                                        >
+                                          通过
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="lw-link danger"
+                                          onClick={() =>
+                                            void api
+                                              .adminLawyerReview(
+                                                p.user_id,
+                                                false,
+                                                "材料不完整",
+                                              )
+                                              .then(refresh)
+                                              .catch((e) =>
+                                                setError(
+                                                  e instanceof Error ? e.message : "审核失败",
+                                                ),
+                                              )
+                                          }
+                                        >
+                                          驳回
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {open && (
+                                    <tr className="lw-detail-row">
+                                      <td colSpan={8}>
+                                        <div className="lawyer-detail">
+                                          {renderLawyerMaterials(p)}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                    )}
-                  </div>
-                  <div className="au-actions">
-                    <button
-                      type="button"
-                      className="btn-sm"
-                      onClick={() => setLawyerDetailId(open ? null : p.user_id)}
-                    >
-                      {open ? "收起" : "资料"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-sm"
-                      onClick={() =>
-                        void api.adminLawyerReview(p.user_id, true).then(refresh).catch((e) =>
-                          setError(e instanceof Error ? e.message : "审核失败"),
-                        )
-                      }
-                    >
-                      通过
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-sm btn-danger"
-                      onClick={() =>
-                        void api
-                          .adminLawyerReview(p.user_id, false, "材料不完整")
-                          .then(refresh)
-                          .catch((e) => setError(e instanceof Error ? e.message : "审核失败"))
-                      }
-                    >
-                      驳回
-                    </button>
-                  </div>
-                </div>
-                );
-              })}
+                      {selectedPending.length > 0 && (
+                        <div className="ac-batch-bar sticky">
+                          <span className="ac-batch-count">
+                            已选 {selectedPending.length} 项
+                          </span>
+                          <button
+                            type="button"
+                            className="ac-btn-pass"
+                            disabled={batchBusy}
+                            onClick={() => void batchReview(true)}
+                          >
+                            批量通过
+                          </button>
+                          <button
+                            type="button"
+                            className="ac-btn-reject"
+                            disabled={batchBusy}
+                            onClick={() => void batchReview(false)}
+                          >
+                            批量驳回
+                          </button>
+                          <button
+                            type="button"
+                            className="lw-link"
+                            onClick={() => setSelectedPending([])}
+                          >
+                            取消选择
+                          </button>
+                        </div>
+                      )}
+                      {renderListPager(
+                        filteredPending.length,
+                        pendingSafePage,
+                        pendingPageCount,
+                        setPendingPage,
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="bk-hint">撤销后对方需重新提交认证材料。</p>
+                  {renderListToolbar(
+                    approvedSearch,
+                    (v) => {
+                      setApprovedSearch(v);
+                      setApprovedPage(1);
+                    },
+                    approvedPageSize,
+                    (n) => {
+                      setApprovedPageSize(n);
+                      setApprovedPage(1);
+                    },
+                    "搜索用户名 / ID / 职业 / 证号 / 地区…",
+                  )}
+                  {approvedLawyers.length === 0 ? (
+                    <div className="bk-empty">暂无已通过认证</div>
+                  ) : filteredApproved.length === 0 ? (
+                    <div className="bk-empty">无匹配结果</div>
+                  ) : (
+                    <>
+                      <div className="lw-table-wrap">
+                        <table className="lw-table">
+                          <thead>
+                            <tr>
+                              <th className="lw-col-user">从业者</th>
+                              <th className="lw-col-prof">职业</th>
+                              <th className="lw-col-license">证号</th>
+                              <th className="lw-col-region">地区</th>
+                              <th className="lw-col-spec">方向</th>
+                              <th className="lw-col-time">审核时间</th>
+                              <th className="lw-col-actions">操作</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pagedApproved.map((p) => {
+                              const open = lawyerDetailId === p.user_id;
+                              const specs = (p.specialties || []).join("、") || "—";
+                              return (
+                                <Fragment key={`ok-${p.user_id}`}>
+                                  <tr className={open ? "is-open" : undefined}>
+                                    <td className="lw-col-user">
+                                      <div className="lw-user">
+                                        <strong>{p.username || `用户#${p.user_id}`}</strong>
+                                        <span>#{p.user_id}</span>
+                                      </div>
+                                    </td>
+                                    <td className="lw-col-prof">
+                                      <span className="lw-prof-badge">
+                                        {PROF_LABEL[p.profession || "lawyer"] || "律师"}
+                                      </span>
+                                    </td>
+                                    <td className="lw-col-license">
+                                      <code>{p.license_no || "—"}</code>
+                                    </td>
+                                    <td className="lw-col-region">{p.region || "—"}</td>
+                                    <td className="lw-col-spec" title={specs}>
+                                      {specs}
+                                    </td>
+                                    <td className="lw-col-time">
+                                      {p.reviewed_at
+                                        ? String(p.reviewed_at).replace("T", " ").slice(0, 16)
+                                        : "—"}
+                                    </td>
+                                    <td className="lw-col-actions">
+                                      <div className="lw-ops">
+                                        <button
+                                          type="button"
+                                          className="lw-link"
+                                          onClick={() =>
+                                            setLawyerDetailId(open ? null : p.user_id)
+                                          }
+                                        >
+                                          {open ? "收起" : "资料"}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="lw-link danger"
+                                          onClick={() => void revokeLawyer(p)}
+                                        >
+                                          撤销
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {open && (
+                                    <tr className="lw-detail-row">
+                                      <td colSpan={7}>
+                                        <div className="lawyer-detail">
+                                          {renderLawyerMaterials(p)}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      {renderListPager(
+                        filteredApproved.length,
+                        approvedSafePage,
+                        approvedPageCount,
+                        setApprovedPage,
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </div>
-            {renderListPager(filteredPending.length, pendingSafePage, pendingPageCount, setPendingPage)}
-          </>
-        )}
-      </div>
+          )}
 
-      <div className="admin-section">
-        <h3>✅ 已通过律师（{filteredApproved.length}/{approvedLawyers.length}）</h3>
-        <p className="bk-hint">可通过「撤销」收回律师认证；撤销后对方需重新申请。</p>
-        {renderListToolbar(
-          approvedSearch,
-          (v) => {
-            setApprovedSearch(v);
-            setApprovedPage(1);
-          },
-          approvedPageSize,
-          (n) => {
-            setApprovedPageSize(n);
-            setApprovedPage(1);
-          },
-          "🔍 搜索用户名 / ID / 证号 / 地区 / 擅长…",
-        )}
-        {approvedLawyers.length === 0 ? (
-          <div className="bk-empty">暂无已通过律师</div>
-        ) : (
-          <>
-            <div className="admin-users">
-              {filteredApproved.length === 0 && <div className="bk-empty">无匹配结果</div>}
-              {pagedApproved.map((p) => {
-                const open = lawyerDetailId === p.user_id;
-                return (
-                  <div className="admin-user lawyer-row" key={`ok-${p.user_id}`}>
+          {nav === "users" && can("users") && (
+            <div className="admin-section ac-section-flush">
+              {access?.is_root && (
+                <p className="bk-hint">
+                  点「设管理员」或「权限」可勾选后台板块；也可右键用户行打开同一弹窗。
+                </p>
+              )}
+              <div className="ac-role-mix">
+                <span>普通用户 {roleMix.user}</span>
+                <span>律师 {roleMix.lawyer}</span>
+                <span>法官 {roleMix.judge}</span>
+                <span>检察官 {roleMix.prosecutor}</span>
+                <span>管理员 {roleMix.admin}</span>
+                <button
+                  type="button"
+                  className="ac-btn-ghost"
+                  disabled={filteredUsers.length === 0}
+                  onClick={exportUsersCsv}
+                >
+                  导出当前列表 CSV
+                </button>
+              </div>
+              <div className="au-toolbar">
+                <input
+                  className="au-search"
+                  placeholder="搜索用户名 / ID / 角色…"
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                />
+                <div className="au-filters">
+                  {(
+                    [
+                      ["all", "全部"],
+                      ["admin", "管理员"],
+                      ["user", "普通用户"],
+                      ["lawyer", "律师"],
+                      ["judge", "法官"],
+                      ["prosecutor", "检察官"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`au-chip ${roleFilter === key ? "active" : ""}`}
+                      onClick={() => {
+                        setRoleFilter(key);
+                        setPage(1);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <select
+                    className="au-page-size"
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPageSize(Number(e.target.value));
+                      setPage(1);
+                    }}
+                    aria-label="每页条数"
+                  >
+                    <option value={10}>每页 10</option>
+                    <option value={20}>每页 20</option>
+                    <option value={50}>每页 50</option>
+                  </select>
+                </div>
+              </div>
+              <div className="admin-users compact">
+                {filteredUsers.length === 0 && (
+                  <div className="bk-empty">{users.length === 0 ? "暂无用户" : "无匹配结果"}</div>
+                )}
+                {pagedUsers.map((u) => (
+                  <div
+                    className="admin-user compact"
+                    key={u.id}
+                    onContextMenu={(e) => openPermMenu(e, u)}
+                  >
                     <div className="au-info">
                       <span className="au-name">
-                        <span className="au-id">#{p.user_id}</span>
-                        {p.username || `用户#${p.user_id}`}
-                        <span className="admin-badge">已通过</span>
+                        <span className="au-id">#{u.id}</span>
+                        {u.username}
+                        {u.is_root && <span className="admin-badge">根管理员</span>}
+                        {u.role === "admin" && !u.is_root && (
+                          <span className="admin-badge">管理员</span>
+                        )}
+                        {u.role === "lawyer" && <span className="admin-badge muted">律师</span>}
+                        {u.role === "judge" && <span className="admin-badge muted">法官</span>}
+                        {u.role === "prosecutor" && (
+                          <span className="admin-badge muted">检察官</span>
+                        )}
                       </span>
                       <span className="au-meta">
-                        证号 {p.license_no} · {p.region} · {(p.specialties || []).join("、") || "未填"}
-                        {p.reviewed_at ? ` · 审核于 ${p.reviewed_at}` : ""}
+                        {u.session_count} 会话 · {u.message_count} 消息 · {u.created_at}
                       </span>
-                      {open && (
-                        <div className="lawyer-detail">
-                          {renderLawyerMaterials(p)}
-                        </div>
+                      {u.role === "admin" && !u.is_root && (
+                        <span className="perm-tags">
+                          {(u.permissions || []).map((key) => (
+                            <span className="perm-tag" key={key}>
+                              {access?.catalog.find((c) => c.key === key)?.label || key}
+                            </span>
+                          ))}
+                        </span>
                       )}
                     </div>
                     <div className="au-actions">
-                      <button
-                        type="button"
-                        className="btn-sm"
-                        onClick={() => setLawyerDetailId(open ? null : p.user_id)}
-                      >
-                        {open ? "收起" : "资料"}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-sm btn-danger"
-                        onClick={() => void revokeLawyer(p)}
-                      >
-                        撤销
-                      </button>
+                      {u.is_root ? (
+                        <span className="au-meta">不可改</span>
+                      ) : access?.is_root && u.role === "admin" ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-sm"
+                            onClick={(e) => openPermMenu(e, u)}
+                          >
+                            权限
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-sm btn-danger"
+                            onClick={() => void revokeAdmin(u)}
+                          >
+                            撤销
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {u.role !== "admin" && access?.is_root && (
+                            <button
+                              type="button"
+                              className="btn-sm"
+                              onClick={(e) => openPermMenu(e, u)}
+                            >
+                              设管理员
+                            </button>
+                          )}
+                          {u.role !== "admin" && (
+                            <button
+                              type="button"
+                              className="btn-sm btn-danger"
+                              onClick={() => void removeUser(u)}
+                            >
+                              删除
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-            {renderListPager(filteredApproved.length, approvedSafePage, approvedPageCount, setApprovedPage)}
-          </>
-        )}
-      </div>
-      </>
-      )}
-
-      {can("users") && (
-      <div className="admin-section">
-        <h3>👥 用户列表（{filteredUsers.length}/{users.length}）</h3>
-        {access?.is_root && (
-          <p className="bk-hint">
-            点「设管理员」或「权限」可勾选后台板块；已是管理员的可点「撤销」收回。也可右键用户行打开同一弹窗。
-          </p>
-        )}
-        <div className="au-toolbar">
-          <input
-            className="au-search"
-            placeholder="🔍 搜索用户名 / ID / 角色…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-          <div className="au-filters">
-            {(
-              [
-                ["all", "全部"],
-                ["admin", "管理员"],
-                ["user", "普通用户"],
-                ["lawyer", "律师"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={`au-chip ${roleFilter === key ? "active" : ""}`}
-                onClick={() => {
-                  setRoleFilter(key);
-                  setPage(1);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-            <select
-              className="au-page-size"
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                setPage(1);
-              }}
-              aria-label="每页条数"
-            >
-              <option value={10}>每页 10</option>
-              <option value={20}>每页 20</option>
-              <option value={50}>每页 50</option>
-            </select>
-          </div>
-        </div>
-        <div className="admin-users compact">
-          {filteredUsers.length === 0 && (
-            <div className="bk-empty">{users.length === 0 ? "暂无用户" : "无匹配结果"}</div>
-          )}
-          {pagedUsers.map((u) => (
-            <div
-              className="admin-user compact"
-              key={u.id}
-              onContextMenu={(e) => openPermMenu(e, u)}
-            >
-              <div className="au-info">
-                <span className="au-name">
-                  <span className="au-id">#{u.id}</span>
-                  {u.username}
-                  {u.is_root && <span className="admin-badge">根管理员</span>}
-                  {u.role === "admin" && !u.is_root && <span className="admin-badge">管理员</span>}
-                  {u.role === "lawyer" && <span className="admin-badge muted">律师</span>}
-                </span>
-                <span className="au-meta">
-                  {u.session_count} 会话 · {u.message_count} 消息 · {u.created_at}
-                </span>
-                {u.role === "admin" && !u.is_root && (
-                  <span className="perm-tags">
-                    {(u.permissions || []).map((key) => (
-                      <span className="perm-tag" key={key}>
-                        {access?.catalog.find((c) => c.key === key)?.label || key}
-                      </span>
-                    ))}
+                ))}
+              </div>
+              {filteredUsers.length > 0 && (
+                <div className="au-pager">
+                  <button
+                    type="button"
+                    className="btn-sm"
+                    disabled={safePage <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    上一页
+                  </button>
+                  <span className="au-pager-info">
+                    第 {safePage} / {pageCount} 页 · 共 {filteredUsers.length} 人
                   </span>
-                )}
-              </div>
-              <div className="au-actions">
-                {u.is_root ? (
-                  <span className="au-meta">不可改</span>
-                ) : access?.is_root && u.role === "admin" ? (
-                  <>
-                    <button type="button" className="btn-sm" onClick={(e) => openPermMenu(e, u)}>
-                      权限
-                    </button>
-                    <button type="button" className="btn-sm btn-danger" onClick={() => void revokeAdmin(u)}>
-                      撤销
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {u.role !== "admin" && access?.is_root && (
-                      <button type="button" className="btn-sm" onClick={(e) => openPermMenu(e, u)}>
-                        设管理员
-                      </button>
-                    )}
-                    {u.role !== "admin" && (
-                      <button type="button" className="btn-sm btn-danger" onClick={() => void removeUser(u)}>
-                        删除
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    className="btn-sm"
+                    disabled={safePage >= pageCount}
+                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                  >
+                    下一页
+                  </button>
+                </div>
+              )}
             </div>
-          ))}
+          )}
+
+          {nav === "kb" && can("kb") && <KnowledgeBasePanel />}
+
+          {nav === "feedbacks" && can("feedbacks") && (
+            <div className="admin-section ac-section-flush">
+              <div className="fb-kpi-row">
+                <div className="fb-kpi">
+                  <span>反馈总数</span>
+                  <strong>{fbStats.total}</strong>
+                </div>
+                <div className="fb-kpi ok">
+                  <span>有用</span>
+                  <strong>{fbStats.useful}</strong>
+                </div>
+                <div className="fb-kpi bad">
+                  <span>无用</span>
+                  <strong>{fbStats.useless}</strong>
+                </div>
+                <div className="fb-kpi rate">
+                  <span>有用率</span>
+                  <strong>{usefulRate == null ? "—" : `${usefulRate}%`}</strong>
+                  {fbStats.total > 0 && (
+                    <div className="ac-quality-bar" aria-hidden>
+                      <i style={{ width: `${usefulRate ?? 0}%` }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="ac-fb-head">
+                <p className="bk-hint" style={{ marginBottom: 0 }}>
+                  当前列表 {filteredFeedbacks.length} 条
+                </p>
+                <div className="ac-subtabs">
+                  {(
+                    [
+                      ["all", "全部"],
+                      ["useful", "有用"],
+                      ["useless", "无用"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={fbFilter === key ? "active" : ""}
+                      onClick={() => setFbFilter(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="bk-hint">
+                有用/无用都要点开看完整问答，才能判断模型答得对不对、用户为何这样评。
+              </p>
+
+              {filteredFeedbacks.length === 0 ? (
+                <div className="bk-empty">暂无反馈</div>
+              ) : (
+                <div className="lw-table-wrap">
+                  <table className="lw-table fb-table">
+                    <thead>
+                      <tr>
+                        <th className="fb-col-rating">评价</th>
+                        <th className="fb-col-user">用户</th>
+                        <th className="fb-col-q">用户提问</th>
+                        <th className="fb-col-preview">回答摘要</th>
+                        <th className="fb-col-comment">备注</th>
+                        <th className="fb-col-time">时间</th>
+                        <th className="fb-col-actions">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredFeedbacks.map((f) => {
+                        const useful = f.rating === "useful";
+                        const open = fbOpenId === f.id;
+                        const when = String(f.created_at || "")
+                          .replace("T", " ")
+                          .slice(0, 16);
+                        const qPreview = (f.question_preview || "").trim() || "—";
+                        const preview = (f.message_preview || "").trim() || "—";
+                        const comment = (f.comment || "").trim();
+                        return (
+                          <Fragment key={f.id}>
+                            <tr className={open ? "is-open" : undefined}>
+                              <td className="fb-col-rating">
+                                <span className={`fb-tag ${useful ? "ok" : "bad"}`}>
+                                  {useful ? "有用" : "无用"}
+                                </span>
+                              </td>
+                              <td className="fb-col-user">
+                                <div className="lw-user">
+                                  <strong title={f.username}>{f.username || "—"}</strong>
+                                  <span>#{f.user_id}</span>
+                                </div>
+                              </td>
+                              <td className="fb-col-q" title={qPreview}>
+                                {qPreview}
+                              </td>
+                              <td className="fb-col-preview" title={preview}>
+                                {preview}
+                              </td>
+                              <td className="fb-col-comment" title={comment || undefined}>
+                                {comment || <span className="fb-muted">—</span>}
+                              </td>
+                              <td className="fb-col-time">{when || "—"}</td>
+                              <td className="fb-col-actions">
+                                <button
+                                  type="button"
+                                  className="lw-link"
+                                  onClick={() => void toggleFeedbackDetail(f.id)}
+                                >
+                                  {open ? "收起" : "看全文"}
+                                </button>
+                              </td>
+                            </tr>
+                            {open && (
+                              <tr className="lw-detail-row">
+                                <td colSpan={7}>
+                                  <div className="fb-detail">
+                                    {fbDetailLoading || !fbDetail ? (
+                                      <p className="fb-muted">加载问答上下文…</p>
+                                    ) : (
+                                      <>
+                                        <div className="fb-detail-meta">
+                                          <span className={`fb-tag ${useful ? "ok" : "bad"}`}>
+                                            {useful ? "有用" : "无用"}
+                                          </span>
+                                          <span>消息 #{fbDetail.message_id}</span>
+                                          <span>会话 {fbDetail.session_id || "—"}</span>
+                                        </div>
+                                        <section className="fb-block">
+                                          <h4>用户提问</h4>
+                                          <pre>{fbDetail.question || "（未找到提问）"}</pre>
+                                        </section>
+                                        <section className="fb-block">
+                                          <h4>助手回答</h4>
+                                          <pre>{fbDetail.answer || "（无内容）"}</pre>
+                                        </section>
+                                        <section className="fb-block">
+                                          <h4>用户备注</h4>
+                                          <pre>
+                                            {(fbDetail.comment || "").trim() || "（未填写）"}
+                                          </pre>
+                                        </section>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {nav === "ops" && (
+            <>
+              {opsSub === "status" && can("status") && status && (
+                <div className="admin-section ac-section-flush">
+                  <div className="admin-status ac-status-rich">
+                    <div>
+                      <span>对话模型</span>
+                      {status.chat_model}
+                    </div>
+                    <div>
+                      <span>嵌入模型</span>
+                      {status.embedding_model}（{status.embedding_dim} 维）
+                    </div>
+                    <div>
+                      <span>OCR</span>
+                      <em className={status.ocr_enabled ? "ok" : "off"}>
+                        {status.ocr_enabled ? "已启用" : "已关闭"}
+                      </em>
+                    </div>
+                    <div>
+                      <span>法规时效</span>
+                      <em className={status.effective_status_enabled ? "ok" : "off"}>
+                        {status.effective_status_enabled ? "已启用" : "已关闭"}
+                      </em>
+                    </div>
+                    <div>
+                      <span>向量库</span>
+                      {status.vector_store}
+                    </div>
+                    <div>
+                      <span>知识库源</span>
+                      {status.kb_source}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {opsSub === "backups" && can("backups") && <BackupPanel />}
+              {opsSub === "logs" && can("logs") && <LogsPanel />}
+            </>
+          )}
         </div>
-        {filteredUsers.length > 0 && (
-          <div className="au-pager">
-            <button
-              type="button"
-              className="btn-sm"
-              disabled={safePage <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              上一页
-            </button>
-            <span className="au-pager-info">
-              第 {safePage} / {pageCount} 页 · 共 {filteredUsers.length} 人
-            </span>
-            <button
-              type="button"
-              className="btn-sm"
-              disabled={safePage >= pageCount}
-              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            >
-              下一页
-            </button>
-          </div>
-        )}
       </div>
-      )}
 
       {menu &&
         access?.is_root &&
@@ -690,62 +1381,10 @@ export default function AdminPanel() {
           </div>,
           document.body,
         )}
-
-      {can("status") && status && (
-        <div className="admin-section">
-          <h3>⚙️ 系统状态</h3>
-          <div className="admin-status">
-            <div><span>对话模型</span>{status.chat_model}</div>
-            <div><span>嵌入模型</span>{status.embedding_model}（{status.embedding_dim} 维）</div>
-            <div><span>OCR</span>{status.ocr_enabled ? "已启用" : "已关闭"}</div>
-            <div><span>法规时效</span>{status.effective_status_enabled ? "已启用" : "已关闭"}</div>
-            <div><span>向量库</span>{status.vector_store}</div>
-            <div><span>知识库源</span>{status.kb_source}</div>
-          </div>
-        </div>
-      )}
-
-      {can("feedbacks") && (
-      <div className="admin-section">
-        <h3>
-          💬 消息反馈（{fbStats.total} · 有用 {fbStats.useful} / 无用 {fbStats.useless}）
-        </h3>
-        {feedbacks.length === 0 ? (
-          <div className="bk-empty">暂无反馈</div>
-        ) : (
-          <div className="admin-users">
-            {feedbacks.map((f) => (
-              <div className="admin-user" key={f.id}>
-                <div className="au-info">
-                  <span className="au-name">
-                    {f.username}
-                    <span className={`admin-badge ${f.rating === "useful" ? "" : "danger"}`}>
-                      {f.rating === "useful" ? "有用" : "无用"}
-                    </span>
-                  </span>
-                  <span className="au-meta">
-                    msg#{f.message_id} · {f.created_at}
-                    {f.comment ? ` · ${f.comment}` : ""}
-                  </span>
-                  <span className="au-meta">{f.message_preview}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      )}
-
-      {can("kb") && <KnowledgeBasePanel />}
-
-      {can("backups") && <BackupPanel />}
-
-      {can("logs") && <LogsPanel />}
     </div>
   );
 }
 
-/** 知识库：上传 / 列表 / 删除（仅后台） */
 function KnowledgeBasePanel() {
   const { documents, loading, uploading, error, refresh, upload, remove } = useDocuments();
   const [toast, setToast] = useState<string | null>(null);
@@ -761,9 +1400,9 @@ function KnowledgeBasePanel() {
   };
 
   return (
-    <div className="admin-section">
+    <div className="admin-section ac-section-flush">
       <div className="log-head">
-        <h3>📚 知识库（{documents.length}）</h3>
+        <h3>知识库文档（{documents.length}）</h3>
         <button className="btn-ghost btn-sm" onClick={() => void refresh()} disabled={loading}>
           {loading ? "刷新中…" : "刷新"}
         </button>
@@ -782,7 +1421,7 @@ function KnowledgeBasePanel() {
           disabled={uploading}
           onClick={() => fileRef.current?.click()}
         >
-          {uploading ? "上传解析中…" : "⬆ 上传文档"}
+          {uploading ? "上传解析中…" : "上传文档"}
         </button>
       </div>
       {toast && <div className="bk-msg">{toast}</div>}
@@ -815,7 +1454,6 @@ function KnowledgeBasePanel() {
   );
 }
 
-/** 业务数据备份：创建 / 列表 / 恢复 / 删除（代码版本请用 Git） */
 function BackupPanel() {
   const [snapshots, setSnapshots] = useState<SnapshotItem[]>([]);
   const [desc, setDesc] = useState("");
@@ -896,31 +1534,33 @@ function BackupPanel() {
   const fmtTime = (t: string) => {
     if (!t) return "";
     try {
-      const d = new Date(t.replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/, "$1-$2-$3T$4:$5:$6"));
+      const d = new Date(
+        t.replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})/, "$1-$2-$3T$4:$5:$6"),
+      );
       return isNaN(d.getTime()) ? t : d.toLocaleString("zh-CN");
     } catch {
       return t;
     }
   };
 
-  const q = search.trim().toLowerCase();
+  const sq = search.trim().toLowerCase();
   const filtered = snapshots.filter((s) => {
-    if (!q) return true;
+    if (!sq) return true;
     return (
-      (s.description || "").toLowerCase().includes(q) ||
-      (s.name || "").toLowerCase().includes(q) ||
-      fmtTime(s.created_at).toLowerCase().includes(q)
+      (s.description || "").toLowerCase().includes(sq) ||
+      (s.name || "").toLowerCase().includes(sq) ||
+      fmtTime(s.created_at).toLowerCase().includes(sq)
     );
   });
   const { pageCount, safePage, slice: paged } = paginate(filtered, page, pageSize);
   const totalMb = snapshots.reduce((sum, s) => sum + (Number(s.size_mb) || 0), 0);
 
   return (
-    <div className="admin-section bk-panel">
+    <div className="admin-section bk-panel ac-section-flush">
       <div className="bk-head">
         <div>
           <h3>数据备份</h3>
-          <p className="bk-sub">备份用户、会话与知识库等运行数据。代码发版请用 Git（本仓库已对接 GitHub）。</p>
+          <p className="bk-sub">备份用户、会话与知识库等运行数据。代码发版请用 Git。</p>
         </div>
         <button type="button" className="btn-ghost btn-sm" onClick={() => void refresh()} disabled={busy}>
           刷新
@@ -950,7 +1590,12 @@ function BackupPanel() {
             className="bk-input"
             disabled={busy}
           />
-          <button type="button" className="btn-primary btn-sm bk-create-btn" onClick={() => void create()} disabled={busy}>
+          <button
+            type="button"
+            className="btn-primary btn-sm bk-create-btn"
+            onClick={() => void create()}
+            disabled={busy}
+          >
             {busy ? "处理中…" : "创建备份"}
           </button>
         </div>
@@ -970,7 +1615,7 @@ function BackupPanel() {
           <div className="au-toolbar bk-toolbar">
             <input
               className="au-search"
-              placeholder="🔍 搜索说明 / 文件名 / 时间…"
+              placeholder="搜索说明 / 文件名 / 时间…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -1004,7 +1649,7 @@ function BackupPanel() {
             </div>
             <div className="bk-empty-title">还没有数据备份</div>
             <div className="bk-empty-desc">
-              这里只备份运行数据。功能代码请用 Git 提交到 GitHub；恢复备份会覆盖当前业务数据。
+              这里只备份运行数据。功能代码请用 Git 提交；恢复备份会覆盖当前业务数据。
             </div>
           </div>
         ) : filtered.length === 0 ? (
@@ -1032,10 +1677,20 @@ function BackupPanel() {
                 </div>
               </div>
               <div className="bk-actions">
-                <button type="button" className="btn-sm bk-restore" disabled={busy} onClick={() => void restore(s)}>
+                <button
+                  type="button"
+                  className="btn-sm bk-restore"
+                  disabled={busy}
+                  onClick={() => void restore(s)}
+                >
                   恢复
                 </button>
-                <button type="button" className="btn-sm btn-danger" disabled={busy} onClick={() => void remove(s)}>
+                <button
+                  type="button"
+                  className="btn-sm btn-danger"
+                  disabled={busy}
+                  onClick={() => void remove(s)}
+                >
                   删除
                 </button>
               </div>
@@ -1073,7 +1728,6 @@ function BackupPanel() {
   );
 }
 
-/** 操作日志：追踪管理操作（删用户/改角色/数据备份等） */
 function LogsPanel() {
   const [logs, setLogs] = useState<AdminLogItem[]>([]);
 
@@ -1091,22 +1745,22 @@ function LogsPanel() {
   }, [refresh]);
 
   const actionLabel: Record<string, string> = {
-    delete_user: "🗑 删除用户",
-    set_role: "🔑 修改角色",
-    backup_create: "💾 创建数据备份",
-    backup_restore: "↩️ 恢复数据备份",
-    backup_delete: "❌ 删除数据备份",
-    kb_upload: "📚 上传文档",
-    kb_delete: "📚 删除文档",
-    kb_ingest: "📚 批量入库",
-    lawyer_review: "⚖️ 律师审核",
-    lawyer_revoke: "↩️ 撤销律师认证",
+    delete_user: "删除用户",
+    set_role: "修改角色",
+    backup_create: "创建数据备份",
+    backup_restore: "恢复数据备份",
+    backup_delete: "删除数据备份",
+    kb_upload: "上传文档",
+    kb_delete: "删除文档",
+    kb_ingest: "批量入库",
+    lawyer_review: "律师审核",
+    lawyer_revoke: "撤销律师认证",
   };
 
   return (
-    <div className="admin-section">
+    <div className="admin-section ac-section-flush">
       <div className="log-head">
-        <h3>📜 操作日志</h3>
+        <h3>操作日志</h3>
         <button className="btn-ghost btn-sm" onClick={refresh}>
           刷新
         </button>

@@ -25,6 +25,18 @@ export interface RelatedCase {
   score: number;
 }
 
+/** 槽位选项（ABCD，D 固定为其他情况） */
+export interface SlotOption {
+  key: string;
+  label: string;
+}
+
+export interface SlotNeed {
+  key: string;
+  prompt: string;
+  options?: SlotOption[];
+}
+
 /** 问答响应 */
 export interface ChatResponse {
   session_id: string;
@@ -40,7 +52,7 @@ export interface ChatResponse {
   risk_banner?: string;
   force_lawyer_cta?: boolean;
   scene?: string;
-  need_slots?: { key: string; prompt: string }[];
+  need_slots?: SlotNeed[];
   waiting_for_slot?: boolean;
   message_id?: number | null;
 }
@@ -196,18 +208,16 @@ export interface SceneCatalogResult {
   items: SceneCatalogItem[];
 }
 
-/** 法律意见书（M5） */
+/** 职业研判草稿：律师意见书 / 法官说理 / 检察审查 */
+export type DraftMode = "lawyer" | "judge" | "prosecutor";
+
 export interface OpinionResult {
   scene: string;
   risk_level: string;
   blocked: boolean;
   title: string;
-  sections: {
-    case_summary?: string;
-    legal_analysis?: string;
-    action_advice?: string;
-    disclaimer?: string;
-  };
+  mode?: DraftMode | string;
+  sections: Record<string, string>;
   markdown: string;
   sources: Source[];
   confidence: string;
@@ -320,12 +330,22 @@ export interface ContractReviewStatus {
   planned_features: string[];
 }
 
+export type UserRecordKind = "template" | "calculator" | "contract" | "opinion";
+
 export interface UserRecordItem {
   id: number;
   kind: string;
   title: string;
   summary: string;
   created_at: string;
+}
+
+export interface UserRecordListResult {
+  items: UserRecordItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  page_count: number;
 }
 
 export interface UserRecordDetail extends UserRecordItem {
@@ -351,9 +371,12 @@ export interface ContractReviewResult {
   disclaimer: string;
 }
 
+export type Profession = "lawyer" | "judge" | "prosecutor";
+
 export interface LawyerProfile {
   user_id: number;
   username?: string;
+  profession?: Profession | string;
   license_no: string;
   region: string;
   specialties: string[];
@@ -426,6 +449,8 @@ export interface ChatMessage {
   /** 后端 messages.id，用于有用/无用反馈 */
   messageId?: number | null;
   feedback?: "useful" | "useless" | null;
+  needSlots?: SlotNeed[];
+  waitingForSlot?: boolean;
 }
 
 export interface FeedbackItem {
@@ -437,7 +462,14 @@ export interface FeedbackItem {
   comment: string;
   created_at: string;
   message_preview: string;
+  question_preview?: string;
   session_id: string;
+}
+
+/** 管理端抽检详情：完整问答 */
+export interface FeedbackDetail extends FeedbackItem {
+  question: string;
+  answer: string;
 }
 
 export interface FeedbackListResult {
@@ -476,6 +508,46 @@ export interface AdminStats {
   message_count: number;
   doc_count: number;
   chunk_count: number;
+}
+
+export interface DayCount {
+  date: string;
+  count: number;
+}
+
+export interface RoleCount {
+  role: string;
+  count: number;
+}
+
+export interface CategoryCount {
+  name: string;
+  docs: number;
+  chunks: number;
+}
+
+export interface DashboardSummary {
+  user_count: number;
+  session_count: number;
+  message_count: number;
+  doc_count: number;
+  chunk_count: number;
+  lawyer_pending: number;
+  lawyer_approved: number;
+  feedback_total: number;
+  feedback_useful: number;
+  feedback_useless: number;
+  useful_rate: number | null;
+  avg_messages_per_session: number;
+}
+
+export interface DashboardData {
+  summary: DashboardSummary;
+  roles: RoleCount[];
+  daily_messages: DayCount[];
+  daily_sessions: DayCount[];
+  daily_new_users: DayCount[];
+  kb_categories: CategoryCount[];
 }
 
 export interface SystemStatus {

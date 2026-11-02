@@ -11,10 +11,22 @@ router = APIRouter(prefix="/api", tags=["records"])
 
 
 @router.get("/records")
-def list_user_records(kind: str, user: dict = Depends(get_current_user)) -> dict:
+def list_user_records(
+    kind: str,
+    page: int = 1,
+    page_size: int = 10,
+    q: str = "",
+    user: dict = Depends(get_current_user),
+) -> dict:
     if kind not in records.KINDS:
         raise AppError("未知记录类型", 400)
-    return {"items": records.list_records(int(user["id"]), kind)}
+    return records.list_records(
+        int(user["id"]),
+        kind,
+        page=page,
+        page_size=page_size,
+        q=q,
+    )
 
 
 @router.get("/records/{record_id}")
@@ -31,3 +43,11 @@ def delete_user_record(record_id: int, user: dict = Depends(get_current_user)) -
     if not ok:
         raise AppError("记录不存在", 404)
     return {"ok": True}
+
+
+@router.delete("/records")
+def clear_user_records(kind: str, user: dict = Depends(get_current_user)) -> dict:
+    if kind not in records.KINDS:
+        raise AppError("未知记录类型", 400)
+    deleted = records.delete_records_by_kind(int(user["id"]), kind)
+    return {"ok": True, "deleted": deleted}

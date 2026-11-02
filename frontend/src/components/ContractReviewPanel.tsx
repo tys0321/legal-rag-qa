@@ -41,6 +41,9 @@ export default function ContractReviewPanel() {
           setResult(row);
           if (row.title) setTitle(row.title);
           if (row.focus) setFocus(row.focus);
+          requestAnimationFrame(() => {
+            document.querySelector(".opinion-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
         }}
       />
       <div className="lawyer-form">
@@ -70,21 +73,21 @@ export default function ContractReviewPanel() {
         <div className="opinion-result">
           <div className="opinion-watermark">{result.watermark}</div>
           <p className="law-excerpt">{result.message}</p>
-          {result.findings.length > 0 && (
+          {(result.findings || []).length > 0 && (
             <section className="opinion-section">
               <h3>风险点</h3>
               <ul className="event-list">
-                {result.findings.map((f) => (
+                {(result.findings || []).map((f) => (
                   <li key={f}>{f}</li>
                 ))}
               </ul>
             </section>
           )}
-          {result.sources.length > 0 && (
+          {(result.sources || []).length > 0 && (
             <section className="opinion-section">
               <h3>对照材料</h3>
               <ul className="event-list">
-                {result.sources.map((s, i) => (
+                {(result.sources || []).map((s, i) => (
                   <li key={s.id || i}>
                     [{i + 1}] {s.title}
                     {s.article ? ` ${s.article}` : ""}
@@ -94,7 +97,10 @@ export default function ContractReviewPanel() {
             </section>
           )}
           {result.disclaimer && <p className="muted">{result.disclaimer}</p>}
-          <ExportButtons title={result.title || "合同审查"} markdown={result.markdown || result.findings.join("\n")} />
+          <ExportButtons
+            title={result.title || "合同审查"}
+            markdown={result.markdown || (result.findings || []).join("\n")}
+          />
         </div>
       )}
     </div>

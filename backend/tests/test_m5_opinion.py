@@ -36,11 +36,30 @@ def test_parse_sections() -> None:
 ## 免责声明
 免责D
 """
-    sec = _parse_sections(md)
+    sec = _parse_sections(md, "lawyer")
     assert "事实A" in sec["case_summary"]
     assert "分析B" in sec["legal_analysis"]
     assert "做C" in sec["action_advice"]
     assert "免责D" in sec["disclaimer"]
+
+    judge_md = """## 事实要点
+要点
+
+## 争议焦点
+焦点1
+
+## 法律适用
+适用
+
+## 裁判思路
+思路
+
+## 免责声明
+免责
+"""
+    j = _parse_sections(judge_md, "judge")
+    assert "要点" in j["case_summary"]
+    assert "焦点1" in j["issues"]
 
 
 def test_l1_blocked_without_llm() -> None:

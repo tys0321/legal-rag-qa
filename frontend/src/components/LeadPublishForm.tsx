@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { LeadItem } from "../api/types";
+import { contactError, isCnMobile } from "../utils/validation";
 
 const SCENES = [
   "劳动用工",
@@ -34,6 +35,11 @@ export default function LeadPublishForm({ defaultScene = "劳动用工", onPubli
   }, [defaultScene]);
 
   const submit = async () => {
+    const cErr = contactError(contact);
+    if (cErr) {
+      setMsg(cErr);
+      return;
+    }
     setBusy(true);
     setMsg("");
     try {
@@ -42,7 +48,7 @@ export default function LeadPublishForm({ defaultScene = "劳动用工", onPubli
         summary,
         scene,
         region,
-        contact,
+        contact: contact.trim(),
         firm_visible: firmVisible,
         allow_push: true,
         publish: true,
@@ -59,7 +65,12 @@ export default function LeadPublishForm({ defaultScene = "劳动用工", onPubli
     }
   };
 
-  const ready = title.trim().length >= 2 && summary.trim().length >= 4 && region.trim() && contact.trim().length >= 5;
+  const contactOk = !contactError(contact);
+  const ready =
+    title.trim().length >= 2 &&
+    summary.trim().length >= 4 &&
+    region.trim().length > 0 &&
+    contactOk;
 
   return (
     <div className="lead-panel">
@@ -94,8 +105,23 @@ export default function LeadPublishForm({ defaultScene = "劳动用工", onPubli
           />
         </label>
         <label>
-          联系方式（将脱敏存储）
-          <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="手机号或微信号" />
+          联系方式（手机须 11 位；将脱敏存储）
+          <input
+            value={contact}
+            onChange={(e) => {
+              const raw = e.target.value;
+              // 纯数字按手机号限制 11 位
+              setContact(/^\d*$/.test(raw) ? raw.slice(0, 11) : raw);
+            }}
+            placeholder="11 位手机号，或微信号"
+            inputMode="tel"
+          />
+          {contact.trim() && contactError(contact) && (
+            <span className="field-error">{contactError(contact)}</span>
+          )}
+          {contact.trim() && isCnMobile(contact) && (
+            <span className="field-ok">手机号格式正确</span>
+          )}
         </label>
         <label className="check-row">
           <input type="checkbox" checked={firmVisible} onChange={(e) => setFirmVisible(e.target.checked)} />
@@ -104,7 +130,10 @@ export default function LeadPublishForm({ defaultScene = "劳动用工", onPubli
         <button className="btn-primary" type="button" disabled={busy || !ready} onClick={() => void submit()}>
           {busy ? "发布中…" : "发布到案源广场"}
         </button>
-        {msg && <p className="form-msg">{msg}</p>}
+        {!ready && !busy && (
+          <p className="muted">需填写：标题（≥2字）、摘要（≥4字）、地区、有效联系方式（手机 11 位或微信号）。</p>
+        )}
+        {msg && <p className={`form-msg ${msg.includes("失败") ? "error" : ""}`}>{msg}</p>}
       </div>
     </div>
   );

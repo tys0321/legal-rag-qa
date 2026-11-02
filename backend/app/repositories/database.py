@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS admin_logs (
 
 CREATE TABLE IF NOT EXISTS lawyer_profiles (
     user_id INT PRIMARY KEY,
+    profession VARCHAR(32) NOT NULL DEFAULT 'lawyer',
     license_no VARCHAR(64) NOT NULL DEFAULT '',
     license_files_json JSON NULL,
     specialties_json JSON NULL,
@@ -265,6 +266,14 @@ def init_db() -> None:
                     try:
                         cur.execute(
                             "ALTER TABLE leads ADD COLUMN allow_push TINYINT(1) NOT NULL DEFAULT 1"
+                        )
+                    except Exception:  # noqa: BLE001
+                        pass
+                cur.execute("SHOW COLUMNS FROM lawyer_profiles LIKE 'profession'")
+                if not cur.fetchone():
+                    try:
+                        cur.execute(
+                            "ALTER TABLE lawyer_profiles ADD COLUMN profession VARCHAR(32) NOT NULL DEFAULT 'lawyer'"
                         )
                     except Exception:  # noqa: BLE001
                         pass

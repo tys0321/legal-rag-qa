@@ -19,8 +19,11 @@ router = APIRouter(prefix="/api", tags=["calculators"])
 
 
 @router.get("/calculators", response_model=CalculatorListOut)
-def list_calculators(_user: dict = Depends(get_current_user)) -> CalculatorListOut:
-    data = calc.list_calculators()
+def list_calculators(
+    audience: str | None = None,
+    _user: dict = Depends(get_current_user),
+) -> CalculatorListOut:
+    data = calc.list_calculators(audience=audience)
     return CalculatorListOut(
         version=data["version"],
         total=data["total"],

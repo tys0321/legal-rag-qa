@@ -11,6 +11,11 @@ class OpinionRequest(BaseModel):
     scene: str = Field("", max_length=64, description="可选场景标签")
     question: str = Field("", max_length=1000, description="用户核心诉求，可空")
     slot_answers: dict[str, str] = Field(default_factory=dict)
+    mode: str = Field(
+        "lawyer",
+        max_length=32,
+        description="lawyer=意见书 / judge=裁判说理 / prosecutor=审查报告",
+    )
 
 
 class OpinionOut(BaseModel):
@@ -18,9 +23,10 @@ class OpinionOut(BaseModel):
     risk_level: str = "L3"
     blocked: bool = False
     title: str = "法律意见书（AI 草稿）"
+    mode: str = "lawyer"
     sections: dict[str, str] = Field(
         default_factory=dict,
-        description="case_summary / legal_analysis / action_advice / disclaimer",
+        description="按 mode 解析的各节内容",
     )
     markdown: str = ""
     sources: list[SourceOut] = Field(default_factory=list)

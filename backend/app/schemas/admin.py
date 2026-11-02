@@ -42,6 +42,46 @@ class UserStatsResponse(BaseModel):
     chunk_count: int
 
 
+class DayCount(BaseModel):
+    date: str
+    count: int
+
+
+class RoleCount(BaseModel):
+    role: str
+    count: int
+
+
+class CategoryCount(BaseModel):
+    name: str
+    docs: int
+    chunks: int
+
+
+class DashboardSummary(BaseModel):
+    user_count: int
+    session_count: int
+    message_count: int
+    doc_count: int
+    chunk_count: int
+    lawyer_pending: int = 0
+    lawyer_approved: int = 0
+    feedback_total: int = 0
+    feedback_useful: int = 0
+    feedback_useless: int = 0
+    useful_rate: float | None = None
+    avg_messages_per_session: float = 0
+
+
+class DashboardResponse(BaseModel):
+    summary: DashboardSummary
+    roles: list[RoleCount] = []
+    daily_messages: list[DayCount] = []
+    daily_sessions: list[DayCount] = []
+    daily_new_users: list[DayCount] = []
+    kb_categories: list[CategoryCount] = []
+
+
 class SystemStatusResponse(BaseModel):
     chat_model: str
     embedding_model: str

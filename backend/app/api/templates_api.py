@@ -19,8 +19,11 @@ router = APIRouter(prefix="/api", tags=["templates"])
 
 
 @router.get("/templates", response_model=TemplateListOut)
-def list_document_templates(_user: dict = Depends(get_current_user)) -> TemplateListOut:
-    data = tpl.list_templates()
+def list_document_templates(
+    audience: str | None = None,
+    _user: dict = Depends(get_current_user),
+) -> TemplateListOut:
+    data = tpl.list_templates(audience=audience)
     return TemplateListOut(
         version=data["version"],
         total=data["total"],
@@ -51,11 +54,13 @@ def fill_document_template(
         "template_fill",
         f"id={template_id} missing={len(result['missing_required'])}",
     )
+    # 附带填写值，便于历史回看时还原表单
+    record_payload = {**result, "filled_fields": dict(req.fields or {})}
     save_record(
         int(user["id"]),
         "template",
         str(result.get("name") or template_id),
         "已生成文书草稿",
-        result,
+        record_payload,
     )
     return TemplateFillOut(**result)

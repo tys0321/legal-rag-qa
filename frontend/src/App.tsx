@@ -8,7 +8,6 @@ import MainView from "./components/MainView";
 export default function App() {
   const [authed, setAuthed] = useState(() => !!tokenStore.get());
 
-  // 登录态失效事件
   useEffect(() => {
     const handler = () => setAuthed(false);
     window.addEventListener("auth:expired", handler);
@@ -28,13 +27,12 @@ export default function App() {
     setAuthed(false);
   };
 
-  // key=userId：切换用户时整个 MainView 重新挂载，消息与会话缓存全部清零
   return (
     <MainView
       key={userId}
       userId={userId}
       username={user?.username ?? "用户"}
-      isAdmin={tokenStore.isAdmin()}
+      role={user?.role ?? "user"}
       onLogout={handleLogout}
     />
   );

@@ -18,6 +18,7 @@ class TemplateSummary(BaseModel):
     category: str = ""
     description: str = ""
     field_count: int = 0
+    audiences: list[str] = Field(default_factory=list)
 
 
 class TemplateDetail(BaseModel):

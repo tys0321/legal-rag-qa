@@ -1,61 +1,142 @@
-// 主界面：同壳顶栏切换用户版/律师版 + 免责弹窗 + 风险条 + 案源
+// 主界面：按 role 硬进用户版 / 律师版 / 管理后台（无版本切换）
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
 import { useSessions } from "../hooks/useSessions";
-import { api } from "../api/client";
-import Sidebar from "./Sidebar";
+import { api, tokenStore } from "../api/client";
+import Sidebar, { type NavItem } from "./Sidebar";
 import MessageBubble from "./MessageBubble";
 import InputBar from "./InputBar";
+import SlotChoiceBar from "./SlotChoiceBar";
 import AdminPanel from "./AdminPanel";
 import DisclaimerModal from "./DisclaimerModal";
-import LawyerPanel from "./LawyerPanel";
+import ProWorkbench from "./ProWorkbench";
+import LawyerApplyForm from "./LawyerApplyForm";
 import LeadPublishForm from "./LeadPublishForm";
 import MyLeadsPanel from "./MyLeadsPanel";
 import LawsSearchPanel from "./LawsSearchPanel";
 import CasesSearchPanel from "./CasesSearchPanel";
 import ScenesCatalogPanel from "./ScenesCatalogPanel";
-import OpinionPanel from "./OpinionPanel";
 import TemplatesPanel from "./TemplatesPanel";
 import CalculatorsPanel from "./CalculatorsPanel";
-import ContractReviewPanel from "./ContractReviewPanel";
 import type { LawyerProfile, StatsResponse } from "../api/types";
 
 interface Props {
   userId: string;
   username: string;
-  isAdmin: boolean;
+  role: string;
   onLogout: () => void;
 }
 
-type AppMode = "user" | "lawyer";
+type Shell = "admin" | "pro" | "user";
 type UserTab =
   | "chat"
   | "scenes"
   | "laws"
   | "cases"
-  | "opinion"
   | "templates"
   | "calculators"
-  | "contracts"
   | "publish"
-  | "my-leads";
+  | "my-leads"
+  | "apply";
 
-export default function MainView({ userId, username, isAdmin, onLogout }: Props) {
+const PRO_ROLES = new Set(["lawyer", "judge", "prosecutor"]);
+
+const USER_NAV: NavItem[] = [
+  { id: "chat", label: "问答" },
+  { id: "scenes", label: "场景分类" },
+  { id: "laws", label: "法规检索" },
+  { id: "cases", label: "类案参考" },
+  { id: "templates", label: "文书" },
+  { id: "calculators", label: "计算器" },
+  { id: "publish", label: "发案源" },
+  { id: "my-leads", label: "我的案源" },
+  { id: "apply", label: "职业认证" },
+];
+
+const LAWYER_NAV: NavItem[] = [
+  { id: "ask", label: "问答" },
+  { id: "leads", label: "案源" },
+  { id: "opinion", label: "意见书" },
+  { id: "contracts", label: "合同审查" },
+  { id: "laws", label: "法规" },
+  { id: "cases", label: "类案" },
+  { id: "templates", label: "文书" },
+  { id: "calculators", label: "计算器" },
+  { id: "firm", label: "律所" },
+];
+
+const JUDGE_NAV: NavItem[] = [
+  { id: "ask", label: "问答" },
+  { id: "docket", label: "争点说理" },
+  { id: "cases", label: "类案" },
+  { id: "laws", label: "法规" },
+  { id: "templates", label: "文书" },
+  { id: "calculators", label: "期限费用" },
+];
+
+const PROSECUTOR_NAV: NavItem[] = [
+  { id: "ask", label: "问答" },
+  { id: "review", label: "审查报告" },
+  { id: "cases", label: "类案" },
+  { id: "laws", label: "法规" },
+  { id: "templates", label: "文书" },
+  { id: "calculators", label: "期限" },
+];
+
+function resolveShell(role: string, lawyer: LawyerProfile | null): Shell {
+  if (role === "admin") return "admin";
+  if (
+    PRO_ROLES.has(role) ||
+    lawyer?.access === "approved" ||
+    lawyer?.status === "approved"
+  ) {
+    return "pro";
+  }
+  return "user";
+}
+
+function professionLabel(role: string, profile: LawyerProfile | null): string {
+  const p = (profile?.profession || role || "").toLowerCase();
+  if (p === "judge") return "法官版";
+  if (p === "prosecutor") return "检察官版";
+  return "律师版";
+}
+
+function defaultProTab(role: string, profile: LawyerProfile | null): string {
+  const p = (profile?.profession || role || "").toLowerCase();
+  if (p === "judge") return "ask";
+  if (p === "prosecutor") return "ask";
+  return "ask";
+}
+
+export default function MainView({ userId, username, role: roleProp, onLogout }: Props) {
   void userId;
+  const [role, setRole] = useState(roleProp);
   const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [view, setView] = useState<"chat" | "admin">("chat");
-  const [appMode, setAppMode] = useState<AppMode>("user");
   const [userTab, setUserTab] = useState<UserTab>("chat");
+  const [proTab, setProTab] = useState("ask");
   const [publishScene, setPublishScene] = useState("劳动用工");
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [lawyer, setLawyer] = useState<LawyerProfile | null>(null);
   const [riskBanner, setRiskBanner] = useState("");
+  const [ready, setReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { messages, busy, activeSessionId, send, loadSession, newSession } = useChat();
+  const chat = useChat();
+  const { messages, busy, activeSessionId, send, loadSession, newSession, slotPrompt, clearSlot } =
+    chat;
   const sessionsCtrl = useSessions(activeSessionId, loadSession, newSession);
+
+  const shell = resolveShell(role, lawyer);
+
+  const proNav = useMemo(() => {
+    const p = (lawyer?.profession || role || "").toLowerCase();
+    if (p === "judge") return JUDGE_NAV;
+    if (p === "prosecutor") return PROSECUTOR_NAV;
+    return LAWYER_NAV;
+  }, [lawyer?.profession, role]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -68,15 +149,36 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
   }, []);
 
   useEffect(() => {
-    api.stats().then(setStats).catch(() => undefined);
-    api
-      .me()
-      .then((u) => {
-        if (!u.disclaimer_acked) setShowDisclaimer(true);
-      })
-      .catch(() => undefined);
-    api.lawyerStatus().then(setLawyer).catch(() => undefined);
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const [u, lp] = await Promise.all([
+          api.me().catch(() => null),
+          api.lawyerStatus().catch(() => null),
+        ]);
+        if (cancelled) return;
+        if (u) {
+          setRole(u.role || roleProp);
+          tokenStore.saveUser({
+            username: u.username,
+            user_id: u.id,
+            role: u.role,
+          });
+          if (!u.disclaimer_acked) setShowDisclaimer(true);
+        }
+        if (lp) {
+          setLawyer(lp);
+          setProTab(defaultProTab(u?.role || roleProp, lp));
+        }
+        api.stats().then(setStats).catch(() => undefined);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [roleProp]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,18 +189,8 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
     setRiskBanner(last?.riskBanner || "");
   }, [messages]);
 
-  const handleAdminClick = () => {
-    setView((v) => (v === "admin" ? "chat" : "admin"));
-  };
-
-  const switchMode = (mode: AppMode) => {
-    setAppMode(mode);
-    if (mode === "user") setUserTab("chat");
-  };
-
   const goPublish = (scene?: string) => {
     if (scene) setPublishScene(scene);
-    setAppMode("user");
     setUserTab("publish");
   };
 
@@ -111,136 +203,127 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
     }
   };
 
-  const readonlyLawyer = !isAdmin && lawyer?.access === "pending_readonly";
+  if (!ready) {
+    return (
+      <div className="app theme-lawfirm">
+        <div className="welcome" style={{ margin: "auto" }}>
+          <p>正在加载工作台…</p>
+        </div>
+      </div>
+    );
+  }
+
+  const title =
+    shell === "admin"
+      ? "法行宝 · 运营控制台"
+      : shell === "pro"
+        ? `法律知识顾问 · ${professionLabel(role, lawyer)}`
+        : "法律知识顾问 · 用户版";
+  const subtitle =
+    shell === "admin"
+      ? "认证审核 · 知识库 · 用户权限 · 问答质量"
+      : shell === "pro"
+        ? professionLabel(role, lawyer) === "律师版"
+          ? "案源经营 · 意见书 · 合同审查"
+          : "类案研究 · 法规检索 · 专业文书"
+        : "RAG 检索增强 · 引用可溯源 · 案源闭环";
+
+  // 从业者：问答会话区常驻侧边栏；用户版：仅在问答页显示
+  const showSessions = shell === "pro" || (shell === "user" && userTab === "chat");
+
+  const navItems = shell === "user" ? USER_NAV : shell === "pro" ? proNav : [];
+  const activeNav = shell === "user" ? userTab : shell === "pro" ? proTab : undefined;
+  const askNavId = shell === "user" ? "chat" : "ask";
 
   return (
     <div className="app theme-lawfirm">
-      {showDisclaimer && <DisclaimerModal onAck={() => void ackDisclaimer()} />}
+      {showDisclaimer && shell !== "admin" && (
+        <DisclaimerModal onAck={() => void ackDisclaimer()} />
+      )}
       {toast && <div className={`global-toast ${toast.type}`}>{toast.message}</div>}
-      <Sidebar
-        sessions={sessionsCtrl.sessions}
-        activeId={activeSessionId}
-        onSelectSession={sessionsCtrl.select}
-        onNewSession={sessionsCtrl.create}
-        onDeleteSession={(id) => {
-          if (id === activeSessionId) newSession();
-          void sessionsCtrl.remove(id);
-        }}
-        onLogout={onLogout}
-        username={username}
-        isAdmin={isAdmin}
-        onAdminClick={isAdmin ? handleAdminClick : undefined}
-        adminActive={view === "admin"}
-      />
+      {shell !== "admin" && (
+        <Sidebar
+          sessions={showSessions ? sessionsCtrl.sessions : []}
+          activeId={showSessions ? activeSessionId : null}
+          onSelectSession={(id) => {
+            if (shell === "user") setUserTab("chat");
+            if (shell === "pro") setProTab("ask");
+            if (id) sessionsCtrl.select(id);
+          }}
+          onNewSession={() => {
+            if (shell === "user") setUserTab("chat");
+            if (shell === "pro") setProTab("ask");
+            sessionsCtrl.create();
+          }}
+          onDeleteSession={(id) => {
+            if (id === activeSessionId) newSession();
+            void sessionsCtrl.remove(id);
+          }}
+          onLogout={onLogout}
+          username={username}
+          isAdmin={false}
+          hideChats={false}
+          showSessions={showSessions}
+          askNavId={askNavId}
+          shellLabel={
+            shell === "pro" ? `${professionLabel(role, lawyer).replace("版", "")}工作台` : "法律知识问答"
+          }
+          navItems={navItems}
+          activeNav={activeNav}
+          onNavSelect={(id) => {
+            if (shell === "user") setUserTab(id as UserTab);
+            else setProTab(id);
+          }}
+        />
+      )}
 
-      <div className="main-area">
-        <header className="topbar">
-          <div className="brand">
-            <div>
-              <h1>
-                {view === "admin"
-                  ? "管理后台"
-                  : appMode === "lawyer"
-                    ? "法律知识顾问 · 律师版"
-                    : "法律知识顾问 · 用户版"}
-              </h1>
-              <p className="subtitle">
-                {view === "admin"
-                  ? "系统数据总览 · 用户/律师审核"
-                  : "RAG 检索增强 · 引用可溯源 · 案源闭环"}
-              </p>
-            </div>
-          </div>
-          <div className="topbar-actions">
-            {view === "chat" && (
-              <div className="mode-switch">
-                <button
-                  type="button"
-                  className={appMode === "user" ? "active" : ""}
-                  onClick={() => switchMode("user")}
-                >
-                  用户版
-                </button>
-                <button
-                  type="button"
-                  className={appMode === "lawyer" ? "active" : ""}
-                  onClick={() => switchMode("lawyer")}
-                >
-                  律师版
-                </button>
+      <div className={`main-area ${shell === "admin" ? "main-area-admin" : ""}`}>
+        {shell !== "admin" && (
+          <header className="topbar">
+            <div className="brand">
+              <div>
+                <h1>{title}</h1>
+                <p className="subtitle">{subtitle}</p>
               </div>
-            )}
-            {view === "chat" && stats && (
-              <span className="stat-pill">
-                {stats.doc_count} 文档 · {stats.chunk_count} 片段
-              </span>
-            )}
-          </div>
-        </header>
-
-        {view === "admin" ? (
-          <div className="admin-scroll">
-            <AdminPanel />
-          </div>
-        ) : appMode === "lawyer" ? (
-          <main className="chat-area lawyer-area">
-            <div className="banner">
-              ⚠️ AI 生成内容仅供参考，不构成正式法律意见。律师办案请以现行法规与个案事实为准。
             </div>
-            <LawyerPanel
-              isAdmin={isAdmin}
-              readonlyMode={!isAdmin && (readonlyLawyer || lawyer?.access === "none")}
-            />
+            <div className="topbar-actions">
+              <span className="stat-pill shell-pill">
+                {shell === "pro" ? professionLabel(role, lawyer) : "用户版"}
+              </span>
+              {shell === "user" && stats && (
+                <span className="stat-pill">
+                  {stats.doc_count} 文档 · {stats.chunk_count} 片段
+                </span>
+              )}
+            </div>
+          </header>
+        )}
+
+        {shell === "admin" && (
+          <div className="admin-shell">
+            <AdminPanel username={username} onLogout={onLogout} />
+          </div>
+        )}
+
+        {shell === "pro" && (
+          <main className="chat-area lawyer-area tool-panel-shell">
+            <div className="banner">
+              ⚠️ AI 生成内容仅供参考，不构成正式法律意见。办案请以现行法规与个案事实为准。
+            </div>
+            <ProWorkbench profile={lawyer} tab={proTab} chat={chat} />
           </main>
-        ) : (
+        )}
+
+        {shell === "user" && (
           <>
             <div className="banner">
               ⚠️ AI 生成内容仅供参考，不构成正式法律意见。具体案件请咨询专业法律人士。
             </div>
-            <div className="sub-tabs user-tabs">
-              <button type="button" className={userTab === "chat" ? "active" : ""} onClick={() => setUserTab("chat")}>
-                AI 咨询
-              </button>
-              <button type="button" className={userTab === "scenes" ? "active" : ""} onClick={() => setUserTab("scenes")}>
-                场景分类
-              </button>
-              <button type="button" className={userTab === "laws" ? "active" : ""} onClick={() => setUserTab("laws")}>
-                法规检索
-              </button>
-              <button type="button" className={userTab === "cases" ? "active" : ""} onClick={() => setUserTab("cases")}>
-                类案参考
-              </button>
-              <button type="button" className={userTab === "opinion" ? "active" : ""} onClick={() => setUserTab("opinion")}>
-                意见书
-              </button>
-              <button
-                type="button"
-                className={userTab === "templates" ? "active" : ""}
-                onClick={() => setUserTab("templates")}
-              >
-                文书
-              </button>
-              <button
-                type="button"
-                className={userTab === "calculators" ? "active" : ""}
-                onClick={() => setUserTab("calculators")}
-              >
-                计算器
-              </button>
-              <button
-                type="button"
-                className={userTab === "contracts" ? "active" : ""}
-                onClick={() => setUserTab("contracts")}
-              >
-                合同审查
-              </button>
-              <button type="button" className={userTab === "publish" ? "active" : ""} onClick={() => setUserTab("publish")}>
-                发案源
-              </button>
-              <button type="button" className={userTab === "my-leads" ? "active" : ""} onClick={() => setUserTab("my-leads")}>
-                我的案源
-              </button>
-            </div>
+            {(lawyer?.status === "pending" || lawyer?.access === "pending_readonly") && (
+              <div className="risk-banner warn">
+                职业认证审核中：通过后本账号将自动进入对应从业者工作台（律师 / 法官 / 检察官）。
+              </div>
+            )}
             {userTab === "chat" && (
               <>
                 {riskBanner && <div className="risk-banner danger">{riskBanner}</div>}
@@ -261,7 +344,6 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
                     <MessageBubble
                       key={m.id}
                       message={m}
-                      onSwitchLawyer={() => switchMode("lawyer")}
                       onPublishLead={(scene) => goPublish(scene)}
                     />
                   ))}
@@ -273,18 +355,31 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
                   )}
                   <div ref={bottomRef} />
                 </main>
-                <InputBar busy={busy} onSend={(t) => void send(t)} />
+                {slotPrompt ? (
+                  <SlotChoiceBar
+                    busy={busy}
+                    prompt={slotPrompt.prompt}
+                    options={slotPrompt.options}
+                    onChoose={(text) => void send(text)}
+                    onCancel={clearSlot}
+                  />
+                ) : (
+                  <InputBar busy={busy} onSend={(t) => void send(t)} />
+                )}
               </>
             )}
             {userTab === "scenes" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <ScenesCatalogPanel
                   onPickActive={(sceneId) => {
                     setPublishScene(sceneId);
                     setUserTab("chat");
                     window.dispatchEvent(
                       new CustomEvent("app:toast", {
-                        detail: { message: `已选择场景「${sceneId}」，可直接提问或发案源`, type: "success" },
+                        detail: {
+                          message: `已选择场景「${sceneId}」，可直接提问或发案源`,
+                          type: "success",
+                        },
                       }),
                     );
                   }}
@@ -292,37 +387,27 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               </main>
             )}
             {userTab === "laws" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <LawsSearchPanel />
               </main>
             )}
             {userTab === "cases" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <CasesSearchPanel />
               </main>
             )}
-            {userTab === "opinion" && (
-              <main className="chat-area lawyer-area">
-                <OpinionPanel />
-              </main>
-            )}
             {userTab === "templates" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <TemplatesPanel />
               </main>
             )}
             {userTab === "calculators" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <CalculatorsPanel />
               </main>
             )}
-            {userTab === "contracts" && (
-              <main className="chat-area lawyer-area">
-                <ContractReviewPanel />
-              </main>
-            )}
             {userTab === "publish" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <LeadPublishForm
                   defaultScene={publishScene}
                   onPublished={() => setUserTab("my-leads")}
@@ -330,8 +415,28 @@ export default function MainView({ userId, username, isAdmin, onLogout }: Props)
               </main>
             )}
             {userTab === "my-leads" && (
-              <main className="chat-area lawyer-area">
+              <main className="chat-area lawyer-area tool-panel-shell">
                 <MyLeadsPanel />
+              </main>
+            )}
+            {userTab === "apply" && (
+              <main className="chat-area lawyer-area tool-panel-shell">
+                <LawyerApplyForm
+                  profile={lawyer}
+                  onUpdated={(p) => {
+                    setLawyer(p);
+                    if (p.status === "approved" || p.access === "approved") {
+                      const nextRole = (p.profession || "lawyer").toLowerCase();
+                      setRole(nextRole);
+                      setProTab("ask");
+                      tokenStore.saveUser({
+                        username,
+                        user_id: Number(userId) || 0,
+                        role: nextRole,
+                      });
+                    }
+                  }}
+                />
               </main>
             )}
           </>

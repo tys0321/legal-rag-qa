@@ -6,7 +6,12 @@ import type { CalculatorDetail, CalculatorRunResult, CalculatorSummary } from ".
 import WorkHistory from "./WorkHistory";
 import ExportButtons from "./ExportButtons";
 
-export default function CalculatorsPanel() {
+interface Props {
+  audience?: string;
+  title?: string;
+}
+
+export default function CalculatorsPanel({ audience, title }: Props) {
   const [items, setItems] = useState<CalculatorSummary[]>([]);
   const [notice, setNotice] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -19,14 +24,14 @@ export default function CalculatorsPanel() {
 
   useEffect(() => {
     api
-      .listCalculators()
+      .listCalculators(audience)
       .then((res) => {
         setItems(res.items);
         setNotice(res.notice);
-        if (res.items[0]) setSelectedId(res.items[0].id);
+        setSelectedId(res.items[0]?.id || "");
       })
       .catch((e) => setErr(e instanceof Error ? e.message : "加载失败"));
-  }, []);
+  }, [audience]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -84,25 +89,42 @@ export default function CalculatorsPanel() {
 
   return (
     <div className="lead-panel calculators-panel">
-      <h2>法律计算器</h2>
+      <h2>{title || "法律计算器"}</h2>
       <p className="muted">
-        首批 5 类：诉讼费、民间借贷利息、工伤简版、交通事故医疗费、加班费。结果区强制标注估算仅供参考。
+        选类型并填完带 * 的参数后点「开始估算」。结果仅为估算，供参考。
       </p>
-      <WorkHistory kind="calculator" tick={tick} onOpen={(payload) => setResult(payload as unknown as CalculatorRunResult)} />
+      {err && <p className="form-msg error">{err}</p>}
+      <WorkHistory
+        kind="calculator"
+        tick={tick}
+        onOpen={(payload) => {
+          setResult(payload as unknown as CalculatorRunResult);
+          requestAnimationFrame(() => {
+            document.querySelector(".opinion-result, .calc-result")?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          });
+        }}
+      />
 
-      <div className="template-picker">
-        {items.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={`template-chip ${selectedId === c.id ? "active" : ""}`}
-            onClick={() => setSelectedId(c.id)}
-          >
-            <span className="template-chip-name">{c.name}</span>
-            <span className="template-chip-cat">{c.category}</span>
-          </button>
-        ))}
-      </div>
+      {items.length === 0 && !err ? (
+        <p className="muted">{busy ? "计算器加载中…" : "暂无可用计算器"}</p>
+      ) : (
+        <div className="template-picker">
+          {items.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={`template-chip ${selectedId === c.id ? "active" : ""}`}
+              onClick={() => setSelectedId(c.id)}
+            >
+              <span className="template-chip-name">{c.name}</span>
+              <span className="template-chip-cat">{c.category}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {detail && (
         <div className="lawyer-form">
@@ -137,7 +159,9 @@ export default function CalculatorsPanel() {
           <button className="btn-primary" type="button" disabled={busy || !canRun} onClick={() => void run()}>
             {busy ? "计算中…" : "开始估算"}
           </button>
-          {err && <p className="form-msg error">{err}</p>}
+          {!canRun && !busy && (
+            <p className="muted">请先填完所有带 * 的必填项，按钮才会可点。</p>
+          )}
         </div>
       )}
 
@@ -151,12 +175,16 @@ export default function CalculatorsPanel() {
           <div className="calc-total">
             <span className="calc-total-label">估算合计</span>
             <span className="calc-total-value">
-              ¥ {result.total.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ¥{" "}
+              {Number(result.total ?? 0).toLocaleString("zh-CN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
           {result.formula && <p className="muted calc-formula">公式：{result.formula}</p>}
           <ul className="event-list calc-lines">
-            {result.lines.map((line, i) => (
+            {(result.lines || []).map((line, i) => (
               <li key={`${line.label}-${i}`}>
                 <span className="event-type">{line.label}</span>
                 <span>{line.value}</span>

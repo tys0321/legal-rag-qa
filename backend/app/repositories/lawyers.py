@@ -7,6 +7,19 @@ from typing import Any
 from app.repositories import database as db
 
 VALID_STATUS = {"none", "pending", "approved", "rejected"}
+# 职业认证类型：审核通过后写入 users.role
+PROFESSIONS = {"lawyer", "judge", "prosecutor"}
+PROFESSION_LABELS = {
+    "lawyer": "律师",
+    "judge": "法官",
+    "prosecutor": "检察官",
+}
+CERTIFIED_ROLES = PROFESSIONS  # users.role 可能值
+
+
+def normalize_profession(raw: str | None) -> str:
+    p = (raw or "lawyer").strip().lower()
+    return p if p in PROFESSIONS else "lawyer"
 
 
 def _parse_json(raw: Any, default):
@@ -37,7 +50,9 @@ def upsert_application(
     region: str,
     specialties: list[str],
     license_files: list[str],
+    profession: str = "lawyer",
 ) -> dict:
+    profession = normalize_profession(profession)
     files_json = json.dumps(license_files, ensure_ascii=False)
     specs_json = json.dumps(specialties, ensure_ascii=False)
     existing = get_profile(user_id)
@@ -47,26 +62,30 @@ def upsert_application(
         db.execute(
             """
             UPDATE lawyer_profiles
-            SET license_no = ?, region = ?, specialties_json = ?, license_files_json = ?,
-                status = 'pending', reject_reason = '', reviewed_by = NULL, reviewed_at = NULL
+            SET profession = ?, license_no = ?, region = ?, specialties_json = ?,
+                license_files_json = ?, status = 'pending', reject_reason = '',
+                reviewed_by = NULL, reviewed_at = NULL
             WHERE user_id = ?
             """,
-            (license_no.strip(), region.strip(), specs_json, files_json, user_id),
+            (profession, license_no.strip(), region.strip(), specs_json, files_json, user_id),
         )
     else:
         db.execute(
             """
             INSERT INTO lawyer_profiles
-            (user_id, license_no, region, specialties_json, license_files_json, status)
-            VALUES (?, ?, ?, ?, ?, 'pending')
+            (user_id, profession, license_no, region, specialties_json, license_files_json, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')
             """,
-            (user_id, license_no.strip(), region.strip(), specs_json, files_json),
+            (user_id, profession, license_no.strip(), region.strip(), specs_json, files_json),
         )
     return get_profile(user_id)  # type: ignore[return-value]
 
 
 def review(user_id: int, *, approve: bool, reviewer_id: int, reason: str = "") -> dict | None:
     status = "approved" if approve else "rejected"
+    profile = get_profile(user_id)
+    if not profile:
+        return None
     cur = db.execute(
         """
         UPDATE lawyer_profiles
@@ -77,14 +96,13 @@ def review(user_id: int, *, approve: bool, reviewer_id: int, reason: str = "") -
     )
     if cur.rowcount == 0:
         return None
-    # 通过后把 users.role 标为 lawyer（admin 不变）
-    if approve:
-        user = db.query_one("SELECT role FROM users WHERE id = ?", (user_id,))
-        if user and user.get("role") != "admin":
-            db.execute("UPDATE users SET role = 'lawyer' WHERE id = ?", (user_id,))
-    else:
-        user = db.query_one("SELECT role FROM users WHERE id = ?", (user_id,))
-        if user and user.get("role") == "lawyer":
+    # 通过后按职业写入 users.role；驳回/撤销则降回 user（admin 不变）
+    user = db.query_one("SELECT role FROM users WHERE id = ?", (user_id,))
+    if user and user.get("role") != "admin":
+        if approve:
+            role = normalize_profession(profile.get("profession"))
+            db.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
+        elif user.get("role") in CERTIFIED_ROLES:
             db.execute("UPDATE users SET role = 'user' WHERE id = ?", (user_id,))
     return get_profile(user_id)
 
@@ -150,11 +168,15 @@ def is_admin_user(user_id: int) -> bool:
 
 
 def can_use_lawyer_write(user_id: int) -> bool:
-    """认领/联系等写操作：管理员或已认证律师。"""
+    """案源认领等写操作：仅管理员或已认证律师（法官/检察官不可接单）。"""
     if is_admin_user(user_id):
         return True
     p = get_profile(user_id)
-    return bool(p and p.get("status") == "approved")
+    return bool(
+        p
+        and p.get("status") == "approved"
+        and normalize_profession(p.get("profession")) == "lawyer"
+    )
 
 
 def lawyer_mode_access(user_id: int) -> str:

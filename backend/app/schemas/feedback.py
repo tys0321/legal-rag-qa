@@ -13,7 +13,14 @@ class FeedbackAdminItem(BaseModel):
     comment: str = ""
     created_at: str = ""
     message_preview: str = ""
+    question_preview: str = ""
     session_id: str = ""
+
+
+class FeedbackAdminDetail(FeedbackAdminItem):
+    """抽检详情：完整问答。"""
+    question: str = ""
+    answer: str = ""
 
 
 class FeedbackAdminList(BaseModel):

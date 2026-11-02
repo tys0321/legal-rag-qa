@@ -27,13 +27,17 @@ def chat_endpoint(req: ChatRequest, user: dict = Depends(get_current_user)) -> C
     if not req.message.strip():
         raise AppError("消息不能为空", 400)
 
+    # 已认证法律从业者跳过面向普通人的低级槽位追问
+    pro_roles = {"lawyer", "judge", "prosecutor"}
+    skip_slots = bool(req.skip_slots) or str(user.get("role") or "").lower() in pro_roles
+
     try:
         result, sid, message_id = get_chat_service().ask(
             req.message,
             req.session_id,
             user["id"],
             scene=req.scene,
-            skip_slots=req.skip_slots,
+            skip_slots=skip_slots,
         )
     except ValueError as exc:
         raise AppError(str(exc), 404) from exc

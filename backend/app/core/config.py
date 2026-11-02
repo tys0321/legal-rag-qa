@@ -51,19 +51,23 @@ class Settings:
 
         # 检索参数
         self.embedding_model: str = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-zh-v1.5")
-        self.retrieve_top_k: int = int(os.getenv("RETRIEVE_TOP_K", "6"))
-        self.chunk_size: int = int(os.getenv("CHUNK_SIZE", "600"))
-        self.chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "80"))
+        self.retrieve_top_k: int = int(os.getenv("RETRIEVE_TOP_K", "4"))
+        self.chunk_size: int = int(os.getenv("CHUNK_SIZE", "500"))
+        self.chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "60"))
         self.min_score: float = float(os.getenv("MIN_SCORE", "0.30"))
+        # 送入 LLM 的单条检索摘录上限（字符），过长会显著拖慢生成
+        self.context_snip_chars: int = int(os.getenv("CONTEXT_SNIP_CHARS", "420"))
+        self.related_cases_top_k: int = int(os.getenv("RELATED_CASES_TOP_K", "2"))
 
         # 混合检索 / 重排 / 自批评（M1）
-        self.hybrid_candidate_k: int = int(os.getenv("HYBRID_CANDIDATE_K", "20"))
+        self.hybrid_candidate_k: int = int(os.getenv("HYBRID_CANDIDATE_K", "16"))
         self.rrf_weight_article: float = float(os.getenv("RRF_WEIGHT_ARTICLE", "1.2"))
         self.rrf_weight_dense: float = float(os.getenv("RRF_WEIGHT_DENSE", "1.0"))
         self.rrf_weight_bm25: float = float(os.getenv("RRF_WEIGHT_BM25", "1.0"))
         self.rerank_mode: str = os.getenv("RERANK_MODE", "heuristic")  # heuristic|llm|cross_encoder
         self.rerank_model: str = os.getenv("RERANK_MODEL", "Xenova/ms-marco-MiniLM-L-6-v2")
-        self.critic_enabled: bool = os.getenv("CRITIC_ENABLED", "true").lower() in ("1", "true", "yes")
+        # 默认关闭二次 LLM 自批评（会接近翻倍时延）；需要质检时再开
+        self.critic_enabled: bool = os.getenv("CRITIC_ENABLED", "false").lower() in ("1", "true", "yes")
         self.confidence_high_threshold: float = float(os.getenv("CONFIDENCE_HIGH_THRESHOLD", "3.0"))
         self.confidence_mid_threshold: float = float(os.getenv("CONFIDENCE_MID_THRESHOLD", "1.0"))
 

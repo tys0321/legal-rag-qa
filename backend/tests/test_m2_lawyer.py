@@ -1,11 +1,13 @@
 """M2：律师认证与免责确认 API。"""
 from __future__ import annotations
 
+import json
 import uuid
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.admin_perms import PERM_KEYS
 from app.main import app
 from app.repositories import database as db
 from app.repositories import lawyers as lawyer_repo
@@ -24,6 +26,15 @@ def _register(client: TestClient, prefix: str = "lw") -> tuple[str, int]:
     return body["token"], body["user_id"]
 
 
+def _promote_admin(user_id: int) -> None:
+    """测试用：设为次级管理员并授予全部板块权限。"""
+    perms = json.dumps(sorted(PERM_KEYS), ensure_ascii=False)
+    db.execute(
+        "UPDATE users SET role = 'admin', admin_perms = ? WHERE id = ?",
+        (perms, user_id),
+    )
+
+
 def test_lawyer_apply_and_review(client: TestClient) -> None:
     token, uid = _register(client)
     headers = {"Authorization": f"Bearer {token}"}
@@ -37,8 +48,8 @@ def test_lawyer_apply_and_review(client: TestClient) -> None:
     assert resp.json()["status"] == "pending"
     assert resp.json()["access"] == "pending_readonly"
 
-    # 提升为 admin 审核
-    db.execute("UPDATE users SET role = 'admin' WHERE id = ?", (uid,))
+    # 提升为 admin 审核（需 lawyers 权限）
+    _promote_admin(uid)
     resp = client.post(
         f"/api/admin/lawyer/{uid}/review",
         json={"approve": True, "reason": ""},
@@ -54,7 +65,7 @@ def test_admin_can_view_files_and_revoke(client: TestClient) -> None:
 
     admin_token, admin_uid = _register(client, "adm")
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
-    db.execute("UPDATE users SET role = 'admin' WHERE id = ?", (admin_uid,))
+    _promote_admin(admin_uid)
 
     token, uid = _register(client, "cert")
     headers = {"Authorization": f"Bearer {token}"}
@@ -100,6 +111,73 @@ def test_admin_can_view_files_and_revoke(client: TestClient) -> None:
     assert lawyer_repo.can_use_lawyer_write(uid) is False
     approved_after = client.get("/api/admin/lawyer/approved", headers=admin_headers)
     assert not any(i["user_id"] == uid for i in approved_after.json()["items"])
+
+
+def test_judge_apply_sets_role_and_blocks_lead_write(client: TestClient) -> None:
+    """法官认证通过后 role=judge，不可接案源。"""
+    admin_token, admin_uid = _register(client, "jadm")
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    _promote_admin(admin_uid)
+
+    token, uid = _register(client, "judge")
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.post(
+        "/api/lawyer/apply/json",
+        json={
+            "profession": "judge",
+            "license_no": "J20260001",
+            "region": "北京市",
+            "specialties": ["民商事"],
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["profession"] == "judge"
+    assert resp.json()["status"] == "pending"
+
+    approve = client.post(
+        f"/api/admin/lawyer/{uid}/review",
+        json={"approve": True, "reason": ""},
+        headers=admin_headers,
+    )
+    assert approve.status_code == 200, approve.text
+    assert approve.json()["profession"] == "judge"
+    assert approve.json()["status"] == "approved"
+
+    row = db.query_one("SELECT role FROM users WHERE id = ?", (uid,))
+    assert row and row["role"] == "judge"
+    assert lawyer_repo.can_use_lawyer_write(uid) is False
+
+
+def test_prosecutor_apply_and_role(client: TestClient) -> None:
+    admin_token, admin_uid = _register(client, "padm")
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    _promote_admin(admin_uid)
+
+    token, uid = _register(client, "proc")
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.post(
+        "/api/lawyer/apply/json",
+        json={
+            "profession": "prosecutor",
+            "license_no": "P20260002",
+            "region": "上海市",
+            "specialties": ["刑事公诉"],
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["profession"] == "prosecutor"
+
+    approve = client.post(
+        f"/api/admin/lawyer/{uid}/review",
+        json={"approve": True, "reason": ""},
+        headers=admin_headers,
+    )
+    assert approve.status_code == 200
+    row = db.query_one("SELECT role FROM users WHERE id = ?", (uid,))
+    assert row and row["role"] == "prosecutor"
+    assert lawyer_repo.can_use_lawyer_write(uid) is False
 
 
 def test_disclaimer_ack(client: TestClient) -> None:
