@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import type { LawHit } from "../api/types";
+import SourceCard from "./SourceCard";
 
 export default function LawsSearchPanel() {
   const [q, setQ] = useState("劳动合同 拖欠工资");
@@ -10,7 +11,6 @@ export default function LawsSearchPanel() {
   const [backend, setBackend] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
 
   const search = async () => {
     const query = q.trim();
@@ -21,7 +21,6 @@ export default function LawsSearchPanel() {
       const res = await api.searchLaws(query, 10);
       setItems(res.items);
       setBackend(res.backend);
-      setExpanded(res.items[0]?.id ?? null);
     } catch (e) {
       setItems([]);
       setErr(e instanceof Error ? e.message : "检索失败");
@@ -55,33 +54,21 @@ export default function LawsSearchPanel() {
         </p>
       )}
       {err && <p className="form-msg error">{err}</p>}
-
-      <ul className="lead-list">
-        {items.map((hit) => (
-          <li key={hit.id}>
-            <button
-              type="button"
-              className="lead-card"
-              onClick={() => setExpanded(expanded === hit.id ? null : hit.id)}
-            >
-              <div className="lead-card-top">
-                <strong>
-                  {hit.title}
-                  {hit.article ? ` · ${hit.article}` : ""}
-                </strong>
-                <span className="match-score">{hit.score.toFixed(3)}</span>
-              </div>
-              <div className="lead-meta">
-                {hit.category || "未分类"}
-                {hit.effective_status ? ` · ${hit.effective_status}` : ""}
-                {hit.match ? ` · ${hit.match}` : ""}
-                {hit.chapter ? ` · ${hit.chapter}` : ""}
-              </div>
-              {expanded === hit.id && <p className="lead-summary law-excerpt">{hit.text}</p>}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <SourceCard
+        sources={items.map((hit) => ({
+          id: hit.id,
+          title: hit.title,
+          article: hit.article,
+          text: hit.text,
+          category: hit.category,
+          score: hit.score,
+          match: hit.match,
+          effective_status: hit.effective_status,
+          effective_detail: hit.effective_detail,
+          page: hit.page,
+        }))}
+        title="检索结果"
+      />
       {!busy && items.length === 0 && !err && <p className="muted">输入关键词后点击检索。</p>}
     </div>
   );

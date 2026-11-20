@@ -427,6 +427,7 @@ export const api = {
     question?: string;
     slot_answers?: Record<string, string>;
     mode?: "lawyer" | "judge" | "prosecutor";
+    matter_id?: number | null;
   }): Promise<OpinionResult> {
     return request<OpinionResult>("/api/opinions/generate", {
       method: "POST",
@@ -471,11 +472,158 @@ export const api = {
   contractReviewStatus(): Promise<ContractReviewStatus> {
     return request<ContractReviewStatus>("/api/contracts/review/status");
   },
-  contractReview(body: { title?: string; text: string; focus?: string }): Promise<ContractReviewResult> {
+  contractReview(body: {
+    title?: string;
+    text: string;
+    focus?: string;
+    matter_id?: number | null;
+  }): Promise<ContractReviewResult> {
     return request<ContractReviewResult>("/api/contracts/review", {
       method: "POST",
       body: JSON.stringify(body),
     });
+  },
+
+  // ---- 案件工作区 ----
+  listMatters(roleMode?: string): Promise<import("./types").MatterItem[]> {
+    const q = roleMode ? `?role_mode=${encodeURIComponent(roleMode)}` : "";
+    return request(`/api/matters${q}`);
+  },
+  createMatter(body: {
+    title: string;
+    case_no?: string;
+    cause?: string;
+    role_mode?: string;
+    status?: string;
+    meta?: Record<string, unknown>;
+  }): Promise<import("./types").MatterItem> {
+    return request("/api/matters", { method: "POST", body: JSON.stringify(body) });
+  },
+  getMatter(id: number): Promise<import("./types").MatterItem> {
+    return request(`/api/matters/${id}`);
+  },
+  updateMatter(
+    id: number,
+    body: Partial<{
+      title: string;
+      case_no: string;
+      cause: string;
+      role_mode: string;
+      status: string;
+      meta: Record<string, unknown>;
+    }>,
+  ): Promise<import("./types").MatterItem> {
+    return request(`/api/matters/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+  },
+  deleteMatter(id: number): Promise<{ ok: boolean }> {
+    return request(`/api/matters/${id}`, { method: "DELETE" });
+  },
+  listMatterArtifacts(id: number): Promise<import("./types").MatterArtifact[]> {
+    return request(`/api/matters/${id}/artifacts`);
+  },
+  addMatterArtifact(
+    id: number,
+    body: { kind: string; title?: string; ref_record_id?: number; payload?: Record<string, unknown> },
+  ): Promise<import("./types").MatterArtifact> {
+    return request(`/api/matters/${id}/artifacts`, { method: "POST", body: JSON.stringify(body) });
+  },
+  deleteMatterArtifact(matterId: number, artifactId: number): Promise<{ ok: boolean }> {
+    return request(`/api/matters/${matterId}/artifacts/${artifactId}`, { method: "DELETE" });
+  },
+  listMatterDeadlines(id: number): Promise<import("./types").MatterDeadline[]> {
+    return request(`/api/matters/${id}/deadlines`);
+  },
+  addMatterDeadline(
+    id: number,
+    body: { label: string; due_date?: string | null; calc_key?: string; done?: boolean },
+  ): Promise<import("./types").MatterDeadline> {
+    return request(`/api/matters/${id}/deadlines`, { method: "POST", body: JSON.stringify(body) });
+  },
+  updateMatterDeadline(
+    matterId: number,
+    deadlineId: number,
+    body: Partial<{ label: string; due_date: string | null; calc_key: string; done: boolean }>,
+  ): Promise<import("./types").MatterDeadline> {
+    return request(`/api/matters/${matterId}/deadlines/${deadlineId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
+  deleteMatterDeadline(matterId: number, deadlineId: number): Promise<{ ok: boolean }> {
+    return request(`/api/matters/${matterId}/deadlines/${deadlineId}`, { method: "DELETE" });
+  },
+  linkMatterRecord(
+    matterId: number,
+    body: { record_id: number; kind?: string; title?: string },
+  ): Promise<import("./types").MatterArtifact> {
+    return request(`/api/matters/${matterId}/link-record`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  extractMatterText(
+    matterId: number,
+    body: { text: string; title?: string },
+  ): Promise<import("./types").MatterArtifact> {
+    return request(`/api/matters/${matterId}/extract`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+  async extractMatterUpload(matterId: number, file: File): Promise<import("./types").MatterArtifact> {
+    const headers: Record<string, string> = {};
+    const token = tokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const fd = new FormData();
+    fd.append("file", file);
+    const resp = await fetch(`/api/matters/${matterId}/extract-upload`, {
+      method: "POST",
+      headers,
+      body: fd,
+    });
+    if (!resp.ok) {
+      let detail = `上传抽取失败（HTTP ${resp.status}）`;
+      try {
+        const body = await resp.json();
+        if (body?.detail) detail = String(body.detail);
+      } catch {
+        /* ignore */
+      }
+      throw new Error(detail);
+    }
+    return resp.json();
+  },
+
+  listElementCharges(): Promise<{
+    items: Array<{
+      key: string;
+      charge: string;
+      category: string;
+      article_hint: string;
+      element_count: number;
+    }>;
+    categories: string[];
+    total: number;
+  }> {
+    return request("/api/elements/charges");
+  },
+  getChargeElements(charge: string): Promise<{
+    charge: string;
+    article_hint: string;
+    category?: string;
+    compare?: string[];
+    elements: Array<{ id: string; label: string; desc: string; group?: string; evidence?: string }>;
+    groups?: Array<{ group: string; items: Array<{ id: string; label: string; desc: string; evidence?: string }> }>;
+  }> {
+    return request(`/api/elements/${encodeURIComponent(charge)}`);
+  },
+  checkElements(body: {
+    charge: string;
+    checked_ids: string[];
+    notes?: Record<string, string>;
+    matter_id?: number | null;
+  }): Promise<import("./types").ElementsCheckResult> {
+    return request("/api/elements/check", { method: "POST", body: JSON.stringify(body) });
   },
 
   listRecords(

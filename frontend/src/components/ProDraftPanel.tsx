@@ -1,18 +1,22 @@
-// 职业草稿：短表单 + RAG 生成 + 历史回看 + Word/PDF 导出
+// 职业草稿：短表单 + RAG 生成 + 历史回看 + Word/PDF 导出 + 关联案件
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
-import type { DraftMode, OpinionResult } from "../api/types";
+import type { DraftMode, MatterItem, OpinionResult } from "../api/types";
 import { DRAFT_CONFIG } from "../data/proDraftConfig";
 import ExportButtons from "./ExportButtons";
 import MarkdownDoc from "./MarkdownDoc";
+import SourceCard from "./SourceCard";
 import WorkHistory from "./WorkHistory";
 
 interface Props {
   mode: DraftMode;
+  /** 外部灌入字段（如要件补侦提示） */
+  seedValues?: Record<string, string>;
+  seedScene?: string;
 }
 
-export default function ProDraftPanel({ mode }: Props) {
+export default function ProDraftPanel({ mode, seedValues, seedScene }: Props) {
   const cfg = DRAFT_CONFIG[mode];
   const [scene, setScene] = useState(cfg.scenes[0] || "");
   const [values, setValues] = useState<Record<string, string>>({});
@@ -21,6 +25,9 @@ export default function ProDraftPanel({ mode }: Props) {
   const [result, setResult] = useState<OpinionResult | null>(null);
   const [tick, setTick] = useState(0);
   const [activeRecordId, setActiveRecordId] = useState<number | null>(null);
+  const [matters, setMatters] = useState<MatterItem[]>([]);
+  const [matterId, setMatterId] = useState<number | "">("");
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const previewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +41,18 @@ export default function ProDraftPanel({ mode }: Props) {
     setResult(null);
     setErr("");
     setActiveRecordId(null);
+    setMatterId("");
+    api.listMatters(mode).then(setMatters).catch(() => setMatters([]));
   }, [mode]);
+
+  useEffect(() => {
+    if (!seedValues) return;
+    setValues((prev) => ({ ...prev, ...seedValues }));
+  }, [seedValues]);
+
+  useEffect(() => {
+    if (seedScene) setScene(seedScene);
+  }, [seedScene]);
 
   const canSubmit = useMemo(() => {
     return cfg.fields
@@ -46,6 +64,11 @@ export default function ProDraftPanel({ mode }: Props) {
     setResult(row);
     setActiveRecordId(recordId ?? null);
     if (row.scene) setScene(row.scene);
+    const open: Record<string, boolean> = {};
+    cfg.sectionOrder.forEach((s, i) => {
+      open[s.key] = i < 2;
+    });
+    setOpenSections(open);
     requestAnimationFrame(() => {
       previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -78,9 +101,10 @@ export default function ProDraftPanel({ mode }: Props) {
         question,
         slot_answers,
         mode,
+        matter_id: matterId === "" ? null : Number(matterId),
       });
       setTick((n) => n + 1);
-      showPreview(res, null);
+      showPreview(res, res.record_id ?? null);
     } catch (e) {
       setResult(null);
       setErr(e instanceof Error ? e.message : "生成失败");
@@ -102,6 +126,23 @@ export default function ProDraftPanel({ mode }: Props) {
       );
     }
   };
+
+  const fullFields = cfg.fields.filter((f) => !f.column || f.column === "full");
+  const leftFields = cfg.fields.filter((f) => f.column === "left");
+  const rightFields = cfg.fields.filter((f) => f.column === "right");
+  const defaultFields = cfg.layout === "pleadings" ? [] : cfg.fields;
+
+  const renderField = (f: (typeof cfg.fields)[0]) => (
+    <label key={f.key}>
+      {f.label}
+      <textarea
+        value={values[f.key] || ""}
+        onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+        rows={f.rows || 3}
+        placeholder={f.placeholder}
+      />
+    </label>
+  );
 
   return (
     <div className="lead-panel opinion-panel">
@@ -127,21 +168,34 @@ export default function ProDraftPanel({ mode }: Props) {
             {result.blocked ? " · 已拦截" : ""}
             {activeRecordId ? " · 历史记录" : " · 刚生成"}
           </div>
-          <MarkdownDoc markdown={result.markdown} className="template-preview-doc" />
-          {result.sources?.length > 0 && (
-            <section className="opinion-section">
-              <h3>引用</h3>
-              <ul className="event-list">
-                {result.sources.map((s, i) => (
-                  <li key={s.id || i}>
-                    <span className="event-type">[{i + 1}]</span>
-                    {s.title}
-                    {s.article ? ` ${s.article}` : ""}
-                  </li>
-                ))}
-              </ul>
-            </section>
+          {cfg.sectionOrder.some((sec) => !!(result.sections?.[sec.key] || "").trim()) ? (
+            <div className="section-fold-list">
+              {cfg.sectionOrder.map((sec) => {
+                const body = result.sections?.[sec.key] || "";
+                if (!body.trim()) return null;
+                const open = openSections[sec.key] !== false;
+                return (
+                  <details
+                    key={sec.key}
+                    className="section-fold"
+                    open={open}
+                    onToggle={(e) =>
+                      setOpenSections((prev) => ({
+                        ...prev,
+                        [sec.key]: (e.target as HTMLDetailsElement).open,
+                      }))
+                    }
+                  >
+                    <summary>{sec.label}</summary>
+                    <MarkdownDoc markdown={body} className="template-preview-doc" />
+                  </details>
+                );
+              })}
+            </div>
+          ) : (
+            <MarkdownDoc markdown={result.markdown} className="template-preview-doc" />
           )}
+          <SourceCard sources={result.sources || []} title="引用" />
           <div className="btn-row">
             <button type="button" className="btn-gold" onClick={() => void copyMd()}>
               复制全文
@@ -174,17 +228,33 @@ export default function ProDraftPanel({ mode }: Props) {
             ))}
           </select>
         </label>
-        {cfg.fields.map((f) => (
-          <label key={f.key}>
-            {f.label}
-            <textarea
-              value={values[f.key] || ""}
-              onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
-              rows={f.rows || 3}
-              placeholder={f.placeholder}
-            />
-          </label>
-        ))}
+        <label>
+          关联案件（可选）
+          <select
+            value={matterId === "" ? "" : String(matterId)}
+            onChange={(e) => setMatterId(e.target.value ? Number(e.target.value) : "")}
+          >
+            <option value="">不关联</option>
+            {matters.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {cfg.layout === "pleadings" ? (
+          <>
+            {fullFields.map(renderField)}
+            <div className="pleadings-grid">
+              <div className="pleadings-col">{leftFields.map(renderField)}</div>
+              <div className="pleadings-col">{rightFields.map(renderField)}</div>
+            </div>
+          </>
+        ) : (
+          defaultFields.map(renderField)
+        )}
+
         <button
           className="btn-primary"
           type="button"

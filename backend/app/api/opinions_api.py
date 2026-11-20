@@ -8,6 +8,7 @@ from app.core.errors import AppError
 from app.schemas.chat import SourceOut
 from app.schemas.opinion import OpinionOut, OpinionRequest
 from app.services.audit import log_action
+from app.services.matters import link_record
 from app.services.opinion import generate_opinion
 from app.services.user_records import save_record
 
@@ -68,11 +69,20 @@ def create_opinion(req: OpinionRequest, user: dict = Depends(get_current_user)) 
         disclaimer=result.disclaimer,
     )
     if not result.blocked:
-        save_record(
+        rid = save_record(
             int(user["id"]),
             "opinion",
             (result.title or f"{req.scene}意见书")[:200],
             f"{result.mode} · 风险 {result.risk_level} · 置信度 {result.confidence}",
             out.model_dump(),
         )
+        out.record_id = rid
+        if req.matter_id and rid:
+            link_record(
+                int(user["id"]),
+                req.matter_id,
+                rid,
+                kind="opinion",
+                title=(result.title or "意见书草稿")[:200],
+            )
     return out

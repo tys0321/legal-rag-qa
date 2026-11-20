@@ -7,14 +7,16 @@ from app.core.auth import get_current_user
 from app.schemas.contract import ContractReviewOut, ContractReviewRequest, ContractReviewStatus
 from app.services.audit import log_action
 from app.services.contract_review import review_contract
+from app.services.matters import link_record
 from app.services.user_records import save_record
 
 router = APIRouter(prefix="/api", tags=["contracts"])
 
 _FEATURES = [
-    "条款风险点标注（违约金、解除、管辖等）",
+    "条款级风险批注（条款 / 风险 / 建议 / 等级）",
     "与知识库法规条款对照提示",
     "生成审查备忘录草稿（须律师审核）",
+    "可关联案件工作区",
 ]
 
 
@@ -40,11 +42,20 @@ def contract_review(
         "contract_review",
         f"title={req.title[:40]} len={len(req.text)} findings={len(result.get('findings') or [])}",
     )
-    save_record(
+    rid = save_record(
         int(user["id"]),
         "contract",
         (req.title or "合同审查")[:200],
         f"{len(result.get('findings') or [])} 条风险点",
         result,
     )
+    result["record_id"] = rid
+    if req.matter_id and rid and not result.get("blocked"):
+        link_record(
+            int(user["id"]),
+            req.matter_id,
+            rid,
+            kind="contract",
+            title=(req.title or "合同审查")[:200],
+        )
     return ContractReviewOut(**result)

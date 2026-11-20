@@ -56,6 +56,7 @@ const USER_NAV: NavItem[] = [
 
 const LAWYER_NAV: NavItem[] = [
   { id: "ask", label: "问答" },
+  { id: "matters", label: "案件" },
   { id: "leads", label: "案源" },
   { id: "opinion", label: "意见书" },
   { id: "contracts", label: "合同审查" },
@@ -68,6 +69,7 @@ const LAWYER_NAV: NavItem[] = [
 
 const JUDGE_NAV: NavItem[] = [
   { id: "ask", label: "问答" },
+  { id: "matters", label: "案件" },
   { id: "docket", label: "争点说理" },
   { id: "cases", label: "类案" },
   { id: "laws", label: "法规" },
@@ -77,6 +79,8 @@ const JUDGE_NAV: NavItem[] = [
 
 const PROSECUTOR_NAV: NavItem[] = [
   { id: "ask", label: "问答" },
+  { id: "matters", label: "案件" },
+  { id: "elements", label: "构成要件" },
   { id: "review", label: "审查报告" },
   { id: "cases", label: "类案" },
   { id: "laws", label: "法规" },
@@ -228,8 +232,8 @@ export default function MainView({ userId, username, role: roleProp, onLogout }:
           : "类案研究 · 法规检索 · 专业文书"
         : "RAG 检索增强 · 引用可溯源 · 案源闭环";
 
-  // 从业者：问答会话区常驻侧边栏；用户版：仅在问答页显示
-  const showSessions = shell === "pro" || (shell === "user" && userTab === "chat");
+  // 用户版 / 从业者：问答入口与会话历史常驻侧边栏，切到工作台后仍可点回「问答」
+  const showSessions = shell === "pro" || shell === "user";
 
   const navItems = shell === "user" ? USER_NAV : shell === "pro" ? proNav : [];
   const activeNav = shell === "user" ? userTab : shell === "pro" ? proTab : undefined;

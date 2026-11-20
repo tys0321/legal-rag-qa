@@ -67,5 +67,15 @@ def test_review_returns_draft(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["status"] == "active"
-    assert any("违约金" in x for x in body["findings"])
+    findings = body["findings"]
+    assert findings
+    # 条款级结构：dict；兼容旧字符串
+    def _has_违约金(item) -> bool:
+        if isinstance(item, str):
+            return "违约金" in item
+        if isinstance(item, dict):
+            return "违约金" in (item.get("risk") or "") + (item.get("clause") or "")
+        return False
+
+    assert any(_has_违约金(x) for x in findings)
     assert body["sources"]

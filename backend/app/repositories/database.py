@@ -175,6 +175,45 @@ CREATE TABLE IF NOT EXISTS user_records (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_records_user_kind (user_id, kind, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS matters (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    case_no VARCHAR(64) NOT NULL DEFAULT '',
+    cause VARCHAR(64) NOT NULL DEFAULT '',
+    role_mode VARCHAR(32) NOT NULL DEFAULT 'lawyer',
+    status VARCHAR(32) NOT NULL DEFAULT 'open',
+    meta_json JSON NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_matters_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_matters_user (user_id, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS matter_artifacts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    matter_id INT NOT NULL,
+    kind VARCHAR(32) NOT NULL,
+    title VARCHAR(200) NOT NULL DEFAULT '',
+    ref_record_id INT NULL,
+    payload_json JSON NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_matter_art_matter FOREIGN KEY (matter_id) REFERENCES matters(id) ON DELETE CASCADE,
+    INDEX idx_matter_art (matter_id, kind, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS matter_deadlines (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    matter_id INT NOT NULL,
+    label VARCHAR(200) NOT NULL,
+    due_date DATE NULL,
+    calc_key VARCHAR(64) NOT NULL DEFAULT '',
+    done TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_matter_dl_matter FOREIGN KEY (matter_id) REFERENCES matters(id) ON DELETE CASCADE,
+    INDEX idx_matter_dl (matter_id, due_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 """
 
 
@@ -346,6 +385,9 @@ def dump_tables() -> dict[str, list[dict]]:
         "leads",
         "lead_events",
         "user_records",
+        "matters",
+        "matter_artifacts",
+        "matter_deadlines",
     ]
     out: dict[str, list[dict]] = {}
     for t in tables:
@@ -364,6 +406,9 @@ def dump_tables() -> dict[str, list[dict]]:
 def restore_tables(data: dict[str, list[dict]]) -> None:
     """从 dump_tables 结构恢复（先清空再插入，注意外键顺序）。"""
     order = [
+        "matter_deadlines",
+        "matter_artifacts",
+        "matters",
         "lead_events",
         "leads",
         "firm_members",
@@ -375,6 +420,7 @@ def restore_tables(data: dict[str, list[dict]]) -> None:
         "messages",
         "tokens",
         "sessions",
+        "user_records",
         "users",
     ]
     insert_order = [
@@ -390,6 +436,10 @@ def restore_tables(data: dict[str, list[dict]]) -> None:
         "firm_members",
         "leads",
         "lead_events",
+        "user_records",
+        "matters",
+        "matter_artifacts",
+        "matter_deadlines",
     ]
     with _lock:
         conn = get_conn()

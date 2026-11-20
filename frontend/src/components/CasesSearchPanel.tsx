@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import type { CaseHit } from "../api/types";
+import SourceCard from "./SourceCard";
 
 const KIND_LABEL: Record<string, string> = {
   judicial_interp: "司法解释",
@@ -19,8 +20,6 @@ export default function CasesSearchPanel() {
   const [backend, setBackend] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-
   const search = async () => {
     const query = q.trim();
     if (!query) return;
@@ -31,7 +30,6 @@ export default function CasesSearchPanel() {
       setItems(res.items);
       setNotice(res.notice || "");
       setBackend(res.backend);
-      setExpanded(res.items[0]?.id ?? null);
     } catch (e) {
       setItems([]);
       setErr(e instanceof Error ? e.message : "检索失败");
@@ -67,32 +65,16 @@ export default function CasesSearchPanel() {
       )}
       {err && <p className="form-msg error">{err}</p>}
 
-      <ul className="lead-list case-cards">
-        {items.map((hit) => (
-          <li key={hit.id}>
-            <button
-              type="button"
-              className="lead-card case-card"
-              onClick={() => setExpanded(expanded === hit.id ? null : hit.id)}
-            >
-              <div className="lead-card-top">
-                <strong>{hit.title}</strong>
-                <span className="match-score">{hit.score.toFixed(3)}</span>
-              </div>
-              <div className="lead-meta">
-                <span className="status-pill">{KIND_LABEL[hit.kind] || hit.kind}</span>
-                {hit.category ? ` · ${hit.category}` : ""}
-              </div>
-              {expanded === hit.id && (
-                <p className="lead-summary law-excerpt">
-                  {(hit.text || "").slice(0, 600)}
-                  {(hit.text || "").length > 600 ? "…" : ""}
-                </p>
-              )}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <SourceCard
+        sources={items.map((hit) => ({
+          id: hit.id,
+          title: hit.title,
+          text: hit.text,
+          category: `${KIND_LABEL[hit.kind] || hit.kind}${hit.category ? ` · ${hit.category}` : ""}`,
+          score: hit.score,
+        }))}
+        title="类案命中"
+      />
       {!busy && items.length === 0 && !err && <p className="muted">输入关键词后检索类案参考材料。</p>}
       {!busy && items.length === 0 && !err && backend && (
         <p className="muted">暂无命中：可入库「司法解释 / 批复 / 指导案例」类文档后再试。</p>

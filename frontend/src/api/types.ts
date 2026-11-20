@@ -223,6 +223,7 @@ export interface OpinionResult {
   confidence: string;
   watermark: string;
   disclaimer: string;
+  record_id?: number | null;
 }
 
 /** 文书模板（M5.2） */
@@ -352,6 +353,13 @@ export interface UserRecordDetail extends UserRecordItem {
   payload: Record<string, unknown>;
 }
 
+export interface ContractFinding {
+  clause: string;
+  risk: string;
+  suggestion: string;
+  severity: string;
+}
+
 export interface ContractReviewResult {
   available: boolean;
   status: string;
@@ -359,16 +367,69 @@ export interface ContractReviewResult {
   message: string;
   title: string;
   focus: string;
-  findings: string[];
+  findings: Array<string | ContractFinding>;
   markdown: string;
   sources: Array<{
     id: string;
     title: string;
     article?: string;
     text?: string;
+    effective_status?: string;
+    effective_detail?: string;
   }>;
   watermark: string;
   disclaimer: string;
+  record_id?: number | null;
+}
+
+export interface MatterItem {
+  id: number;
+  title: string;
+  case_no: string;
+  cause: string;
+  role_mode: string;
+  status: string;
+  meta: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  artifact_count: number;
+  deadline_count: number;
+  overdue_count: number;
+}
+
+export interface MatterArtifact {
+  id: number;
+  matter_id: number;
+  kind: string;
+  title: string;
+  ref_record_id?: number | null;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface MatterDeadline {
+  id: number;
+  matter_id: number;
+  label: string;
+  due_date?: string | null;
+  calc_key: string;
+  done: boolean;
+  overdue: boolean;
+  created_at: string;
+}
+
+export interface ElementsCheckResult {
+  charge: string;
+  article_hint: string;
+  category?: string;
+  compare?: string[];
+  found: boolean;
+  elements: Array<{ id: string; label: string; desc: string; group?: string; evidence?: string }>;
+  groups?: Array<{ group: string; items: Array<{ id: string; label: string; desc: string; evidence?: string }> }>;
+  missing: Array<{ id: string; label: string; desc: string; group?: string; evidence?: string }>;
+  checked_ids: string[];
+  supplement_text: string;
+  artifact_id?: number | null;
 }
 
 export type Profession = "lawyer" | "judge" | "prosecutor";

@@ -8,6 +8,8 @@ export type FieldDef = {
   placeholder: string;
   rows?: number;
   required?: boolean;
+  /** judge 诉辩对照双栏：left=诉请侧 right=答辩侧 */
+  column?: "left" | "right" | "full";
 };
 
 export type DraftConfig = {
@@ -19,6 +21,7 @@ export type DraftConfig = {
   questionKey: string;
   fields: FieldDef[];
   sectionOrder: { key: string; label: string }[];
+  layout?: "default" | "pleadings";
 };
 
 export const DRAFT_CONFIG: Record<DraftMode, DraftConfig> = {
@@ -54,11 +57,12 @@ export const DRAFT_CONFIG: Record<DraftMode, DraftConfig> = {
   },
   judge: {
     title: "争点与说理",
-    blurb: "贴入诉请与答辩要点，整理争点和说理路径。",
+    blurb: "对照诉请与答辩，整理争点、说理路径与庭审提纲。",
     sceneLabel: "案由",
     scenes: ["合同纠纷", "劳动争议", "婚姻家事", "侵权责任", "房屋租赁", "行政诉讼", "其他民商事"],
     button: "生成草稿",
     questionKey: "focus",
+    layout: "pleadings",
     fields: [
       {
         key: "focus",
@@ -66,14 +70,39 @@ export const DRAFT_CONFIG: Record<DraftMode, DraftConfig> = {
         placeholder: "如：违约金应否调整；诉讼时效是否经过",
         rows: 2,
         required: true,
+        column: "full",
       },
       {
-        key: "pleadings",
-        label: "诉请 · 答辩 · 事实",
-        placeholder:
-          "原告诉请：…\n被告答辩：…\n无争议事实：…\n争议事实：…",
-        rows: 10,
+        key: "claim",
+        label: "原告诉请",
+        placeholder: "逐项列明诉讼请求…",
+        rows: 5,
         required: true,
+        column: "left",
+      },
+      {
+        key: "defense",
+        label: "被告答辩",
+        placeholder: "主要抗辩与事实主张…",
+        rows: 5,
+        required: true,
+        column: "right",
+      },
+      {
+        key: "undisputed",
+        label: "无争议事实",
+        placeholder: "双方均认可或可初步认定的事实…",
+        rows: 4,
+        required: false,
+        column: "left",
+      },
+      {
+        key: "disputed",
+        label: "争议事实",
+        placeholder: "待证事实与举证情况…",
+        rows: 4,
+        required: false,
+        column: "right",
       },
     ],
     sectionOrder: [
@@ -81,14 +110,30 @@ export const DRAFT_CONFIG: Record<DraftMode, DraftConfig> = {
       { key: "issues", label: "争议焦点" },
       { key: "legal_analysis", label: "法律适用" },
       { key: "action_advice", label: "裁判思路" },
+      { key: "hearing_outline", label: "庭审提纲" },
       { key: "disclaimer", label: "免责声明" },
     ],
   },
   prosecutor: {
     title: "审查报告",
-    blurb: "写清事实、证据和焦点，生成审查要点草稿。",
+    blurb: "写清事实、证据和焦点，生成审查要点与补查提纲。",
     sceneLabel: "罪名/类型",
-    scenes: ["盗窃", "诈骗", "故意伤害", "危险驾驶", "职务犯罪", "公益诉讼", "其他刑事"],
+    scenes: [
+      "盗窃",
+      "诈骗",
+      "合同诈骗",
+      "故意伤害",
+      "抢劫",
+      "危险驾驶",
+      "交通肇事",
+      "帮助信息网络犯罪活动",
+      "非法吸收公众存款",
+      "贪污",
+      "受贿",
+      "寻衅滋事",
+      "公益诉讼（行政）",
+      "其他刑事",
+    ],
     button: "生成草稿",
     questionKey: "focus",
     fields: [
@@ -107,12 +152,20 @@ export const DRAFT_CONFIG: Record<DraftMode, DraftConfig> = {
         rows: 10,
         required: true,
       },
+      {
+        key: "supplement_hint",
+        label: "要件/补侦提示（可选）",
+        placeholder: "可从「构成要件」页勾选后一键填入",
+        rows: 4,
+        required: false,
+      },
     ],
     sectionOrder: [
       { key: "case_summary", label: "事实摘要" },
       { key: "evidence", label: "证据与证明" },
       { key: "legal_analysis", label: "定性分析" },
       { key: "action_advice", label: "处理意见" },
+      { key: "supplement", label: "补查提纲" },
       { key: "disclaimer", label: "免责声明" },
     ],
   },

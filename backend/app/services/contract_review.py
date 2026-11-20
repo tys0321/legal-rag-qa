@@ -1,5 +1,7 @@
-"""合同审查：混合检索 + LLM，输出风险点、法规对照与备忘录草稿。"""
+"""合同审查：混合检索 + LLM，输出条款级风险批注、法规对照与备忘录草稿。"""
 from __future__ import annotations
+
+import re
 
 from app.core.config import settings
 from app.repositories.vector_store import get_store
@@ -16,7 +18,9 @@ WATERMARK = "AI 生成草稿，须律师审核，不构成正式法律意见"
 REVIEW_PROMPT = """你是法律知识顾问。请审查下面的合同摘录，并严格按以下 Markdown 结构输出（四个一级标题，勿增删）：
 
 ## 风险点
-（分点列出违约金、解除、管辖、付款、责任限制等风险；每点一行，以「- 」开头）
+每点一行，必须以「- 」开头，并尽量使用格式：
+- 【条款：…】风险：…｜建议：…｜等级：高/中/低
+若无法定位具体条款，写【条款：整体/未标明】。
 
 ## 法规对照
 （只对照【检索材料】中的条款，引用格式使用 [1][2]；材料没有的内容写明「检索材料未覆盖」）
@@ -68,26 +72,72 @@ def _section(md: str, heading: str) -> str:
     return "\n".join(found).strip()
 
 
-def _findings(md: str) -> list[str]:
-    lines = []
+def _parse_finding_line(item: str) -> dict:
+    """Parse「【条款：…】风险：…｜建议：…｜等级：…」or fallback plain text."""
+    clause, risk, suggestion, severity = "", item, "", "中"
+    m = re.search(r"【条款[：:](.*?)】", item)
+    if m:
+        clause = m.group(1).strip()
+        rest = item[m.end() :].strip()
+    else:
+        rest = item
+    # split by ｜ or |
+    parts = re.split(r"[｜|]", rest)
+    for p in parts:
+        p = p.strip()
+        if p.startswith("风险") or p.startswith("风险："):
+            risk = re.sub(r"^风险[：:]\s*", "", p).strip() or risk
+        elif p.startswith("建议"):
+            suggestion = re.sub(r"^建议[：:]\s*", "", p).strip()
+        elif p.startswith("等级"):
+            severity = re.sub(r"^等级[：:]\s*", "", p).strip() or severity
+        elif not clause and not risk:
+            risk = p or risk
+    if not clause:
+        clause = "未标明条款"
+    if severity not in {"高", "中", "低"}:
+        if "高" in severity:
+            severity = "高"
+        elif "低" in severity:
+            severity = "低"
+        else:
+            severity = "中"
+    return {
+        "clause": clause[:200],
+        "risk": risk[:500],
+        "suggestion": suggestion[:500],
+        "severity": severity,
+    }
+
+
+def _findings(md: str) -> list[dict]:
+    out: list[dict] = []
     for raw in _section(md, "风险点").splitlines():
         item = raw.strip().lstrip("-").lstrip("•").strip()
         if item:
-            lines.append(item)
-    return lines[:12]
+            out.append(_parse_finding_line(item))
+    return out[:16]
 
 
 def _fallback(title: str, text: str, focus: str, hits: list[dict]) -> str:
-    risks = ["请核对主体、标的、价款、履行期限与违约责任是否写明。"]
+    risks = [
+        "- 【条款：整体】风险：请核对主体、标的、价款、履行期限与违约责任是否写明。｜建议：补齐必备条款并明确违约责任上限。｜等级：中"
+    ]
     if focus:
-        risks.append(f"请重点核对关注点「{focus}」对应条款是否对等、是否约定了上限或例外。")
+        risks.append(
+            f"- 【条款：关注点相关】风险：请重点核对「{focus}」是否对等、是否约定上限或例外。"
+            f"｜建议：对照行业惯例改写不对等表述。｜等级：中"
+        )
     if "管辖" not in text and "仲裁" not in text:
-        risks.append("摘录中未见管辖或仲裁约定，发生争议时可能按法定管辖处理。")
+        risks.append(
+            "- 【条款：争议解决】风险：摘录中未见管辖或仲裁约定。"
+            "｜建议：明确管辖法院或仲裁机构。｜等级：低"
+        )
     cite = []
     for i, h in enumerate(hits[:4], start=1):
         cite.append(f"- [{i}] 《{h.get('title') or '未知'}》{h.get('article') or ''}")
     cite_block = "\n".join(cite) if cite else "- 检索材料未覆盖，请律师对照现行法规复核。"
-    risk_block = "\n".join(f"- {x}" for x in risks)
+    risk_block = "\n".join(risks)
     return (
         f"## 风险点\n{risk_block}\n\n"
         f"## 法规对照\n{cite_block}\n\n"
@@ -125,7 +175,8 @@ def review_contract(*, title: str, text: str, focus: str = "") -> dict:
     risk = classify_risk(f"{title}\n{focus}\n{text}")
     if risk.level == "L1" and risk.block_answer:
         md = (
-            "## 风险点\n- 涉及人身安全或刑事等高风险事项，系统不提供具体审查意见。\n\n"
+            "## 风险点\n- 【条款：整体】风险：涉及人身安全或刑事等高风险事项，系统不提供具体审查意见。"
+            "｜建议：向执业律师或主管机关咨询。｜等级：高\n\n"
             "## 法规对照\n- 请向执业律师或主管机关咨询。\n\n"
             "## 审查备忘录\n- 如有紧迫危险请拨打 110/120。\n\n"
             f"## 免责声明\n{DISCLAIMER}"

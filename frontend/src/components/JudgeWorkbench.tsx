@@ -8,6 +8,7 @@ import LawsSearchPanel from "./LawsSearchPanel";
 import CasesSearchPanel from "./CasesSearchPanel";
 import TemplatesPanel from "./TemplatesPanel";
 import CalculatorsPanel from "./CalculatorsPanel";
+import CaseWorkspacePanel from "./CaseWorkspacePanel";
 
 interface Props {
   profile: LawyerProfile | null;
@@ -24,12 +25,15 @@ export default function JudgeWorkbench({ profile, tab, chat }: Props) {
         {profile?.region ? ` · ${profile.region}` : ""}
         · 不开放案源
       </p>
+      {tab === "matters" && <CaseWorkspacePanel roleMode="judge" />}
       {tab === "docket" && <ProDraftPanel mode="judge" />}
       {tab === "ask" && <ProAskPanel hint="检索法条、程序节点与裁判口径，回答带来源。" chat={chat} />}
       {tab === "cases" && <CasesSearchPanel />}
       {tab === "laws" && <LawsSearchPanel />}
       {tab === "templates" && <TemplatesPanel audience="judge" title="裁判文书模板" />}
-      {tab === "calculators" && <CalculatorsPanel audience="judge" title="期限 / 诉讼费" />}
+      {tab === "calculators" && (
+        <CalculatorsPanel audience="judge" title="期限 / 诉讼费" roleMode="judge" />
+      )}
     </div>
   );
 }

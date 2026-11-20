@@ -11,6 +11,7 @@ import LawsSearchPanel from "./LawsSearchPanel";
 import CasesSearchPanel from "./CasesSearchPanel";
 import TemplatesPanel from "./TemplatesPanel";
 import CalculatorsPanel from "./CalculatorsPanel";
+import CaseWorkspacePanel from "./CaseWorkspacePanel";
 import { useState } from "react";
 
 interface Props {
@@ -30,6 +31,7 @@ export default function LawyerPanel({ profile, tab, chat }: Props) {
         {profile?.region ? ` · ${profile.region}` : ""}
       </p>
 
+      {tab === "matters" && <CaseWorkspacePanel roleMode="lawyer" />}
       {tab === "leads" && (
         <div className="lead-panel">
           <div className="sub-tabs scene-filter">
@@ -57,7 +59,7 @@ export default function LawyerPanel({ profile, tab, chat }: Props) {
       {tab === "laws" && <LawsSearchPanel />}
       {tab === "cases" && <CasesSearchPanel />}
       {tab === "templates" && <TemplatesPanel audience="lawyer" title="文书模板" />}
-      {tab === "calculators" && <CalculatorsPanel audience="lawyer" title="计算器" />}
+      {tab === "calculators" && <CalculatorsPanel audience="lawyer" title="计算器" roleMode="lawyer" />}
       {tab === "firm" && <FirmPanel readonlyMode={false} />}
     </div>
   );

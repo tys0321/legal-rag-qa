@@ -2,16 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
-import type { CalculatorDetail, CalculatorRunResult, CalculatorSummary } from "../api/types";
+import type {
+  CalculatorDetail,
+  CalculatorRunResult,
+  CalculatorSummary,
+  MatterItem,
+} from "../api/types";
 import WorkHistory from "./WorkHistory";
 import ExportButtons from "./ExportButtons";
 
 interface Props {
   audience?: string;
   title?: string;
+  roleMode?: "lawyer" | "judge" | "prosecutor";
 }
 
-export default function CalculatorsPanel({ audience, title }: Props) {
+export default function CalculatorsPanel({ audience, title, roleMode }: Props) {
   const [items, setItems] = useState<CalculatorSummary[]>([]);
   const [notice, setNotice] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -21,6 +27,9 @@ export default function CalculatorsPanel({ audience, title }: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [tick, setTick] = useState(0);
+  const [matters, setMatters] = useState<MatterItem[]>([]);
+  const [matterId, setMatterId] = useState<number | "">("");
+  const [dueDate, setDueDate] = useState("");
 
   useEffect(() => {
     api
@@ -32,6 +41,11 @@ export default function CalculatorsPanel({ audience, title }: Props) {
       })
       .catch((e) => setErr(e instanceof Error ? e.message : "加载失败"));
   }, [audience]);
+
+  useEffect(() => {
+    if (!roleMode) return;
+    api.listMatters(roleMode).then(setMatters).catch(() => setMatters([]));
+  }, [roleMode]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -197,6 +211,53 @@ export default function CalculatorsPanel({ audience, title }: Props) {
                 <li key={i}>{w}</li>
               ))}
             </ul>
+          )}
+          {roleMode && (
+            <div className="matter-inline-form calc-matter-bind">
+              <select
+                value={matterId === "" ? "" : String(matterId)}
+                onChange={(e) => setMatterId(e.target.value ? Number(e.target.value) : "")}
+              >
+                <option value="">写入案件期限…</option>
+                {matters.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </select>
+              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <button
+                type="button"
+                className="btn-gold"
+                disabled={matterId === "" || busy}
+                onClick={async () => {
+                  if (matterId === "") return;
+                  try {
+                    await api.addMatterDeadline(Number(matterId), {
+                      label: `${result.name}（估算 ¥${Number(result.total).toFixed(2)}）`,
+                      due_date: dueDate || null,
+                      calc_key: result.id,
+                    });
+                    window.dispatchEvent(
+                      new CustomEvent("app:toast", {
+                        detail: { message: "已写入案件期限", type: "success" },
+                      }),
+                    );
+                  } catch (e) {
+                    window.dispatchEvent(
+                      new CustomEvent("app:toast", {
+                        detail: {
+                          message: e instanceof Error ? e.message : "写入失败",
+                          type: "error",
+                        },
+                      }),
+                    );
+                  }
+                }}
+              >
+                写入期限
+              </button>
+            </div>
           )}
           <ExportButtons
             title={result.name || "计算估算"}

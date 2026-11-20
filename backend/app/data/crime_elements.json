@@ -1,0 +1,528 @@
+{
+  "盗窃": {
+    "charge": "盗窃",
+    "article_hint": "刑法第二百六十四条；两高《关于办理盗窃刑事案件适用法律若干问题的解释》",
+    "category": "侵财",
+    "compare": ["抢夺", "侵占", "诈骗", "掩饰、隐瞒犯罪所得"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体责任能力", "desc": "一般主体；已满16周岁（已满14不满16周岁仅限特定情形外不适用盗窃）", "evidence": "户籍/身份证明、年龄鉴定、精神状况材料"},
+      {"id": "obj", "group": "构成要件", "label": "犯罪对象", "desc": "他人占有的公私财物（含虚拟财产等须论证是否属财物）", "evidence": "权属证明、占有状态说明、物品照片/扣押清单"},
+      {"id": "act", "group": "构成要件", "label": "客观行为", "desc": "秘密窃取或以平和手段非法取得他人占有的财物", "evidence": "监控、现场勘验、证人证言、被害人陈述、指纹/DNA"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大或法定情节", "desc": "数额较大，或多次盗窃、入户盗窃、携带凶器盗窃、扒窃", "evidence": "价格鉴定/核价、前科劣迹、入户/凶器/扒窃情节证据"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "明知他人财物而窃取并意图永久占有或处分", "evidence": "销赃记录、转账、聊天记录、供述与辩解印证"},
+      {"id": "ev_chain", "group": "证据要点", "label": "人案关联", "desc": "嫌疑人与作案现场/赃物/监控轨迹可闭合印证", "evidence": "轨迹、通讯基站、电子数据、辨认笔录"},
+      {"id": "ev_value", "group": "证据要点", "label": "数额认定可靠", "desc": "鉴定程序合法、基准时点与方法正确，有争议时复核", "evidence": "鉴定意见、委托手续、市场询价材料"},
+      {"id": "ev_exclude", "group": "证据要点", "label": "排除合理怀疑", "desc": "排除借物、保管、民事纠纷等无罪/他罪解释", "evidence": "双方关系、事前沟通、返还意思表示等"},
+      {"id": "proc_arrest", "group": "程序审查", "label": "强制措施与讯问合法", "desc": "传唤/拘传/拘留/逮捕手续齐备，讯问同步录音录像合规", "evidence": "法律文书、同步录音录像、权利义务告知"},
+      {"id": "proc_search", "group": "程序审查", "label": "搜查扣押合法", "desc": "搜查证/见证人/扣押清单规范，电子数据提取合法", "evidence": "搜查笔录、扣押清单、电子数据提取笔录"}
+    ]
+  },
+  "诈骗": {
+    "charge": "诈骗",
+    "article_hint": "刑法第二百六十六条；两高《关于办理诈骗刑事案件具体应用法律若干问题的解释》",
+    "category": "侵财",
+    "compare": ["合同诈骗", "盗窃", "侵占", "敲诈勒索", "非法吸收公众存款"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体责任能力", "desc": "一般主体；单位犯罪情形另依规定", "evidence": "身份证明、单位主体材料"},
+      {"id": "deceive", "group": "构成要件", "label": "欺骗行为", "desc": "虚构事实或隐瞒真相，足以使对方陷入错误认识", "evidence": "虚假宣传、伪造证件、聊天/通话记录、网页广告"},
+      {"id": "mistake", "group": "构成要件", "label": "错误认识", "desc": "被害人因欺骗行为产生错误认识", "evidence": "被害人陈述、认知能力、交易背景"},
+      {"id": "dispose", "group": "构成要件", "label": "处分财产", "desc": "基于错误认识自愿处分财产（交付或转移占有）", "evidence": "转账凭证、交接记录、合同签署过程"},
+      {"id": "loss", "group": "构成要件", "label": "财产损失与取得", "desc": "行为人取得财产，被害人遭受相应损失", "evidence": "银行流水、到账记录、损失清单"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "事前或事中产生非法占有目的（逃匿、挥霍、拒不返还等）", "evidence": "资金去向、消费记录、逃匿情节、承诺履约表现"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大等", "desc": "达到当地数额标准，或情节严重/特别严重", "evidence": "金额汇总表、司法鉴定、被害人损失确认"},
+      {"id": "ev_causation", "group": "证据要点", "label": "欺骗与处分因果", "desc": "处分系因错误认识，而非其他独立原因", "evidence": "决策过程证人、时间线对照"},
+      {"id": "ev_compare", "group": "证据要点", "label": "此罪彼罪界分", "desc": "与民事违约、合同诈骗、盗窃（秘密取得）界分清晰", "evidence": "合同履行情况、是否基于错误认识处分"},
+      {"id": "proc_electronic", "group": "程序审查", "label": "电子数据取证合法", "desc": "提取、固定、保管、鉴定符合规范", "evidence": "提取笔录、哈希校验、鉴定意见"},
+      {"id": "proc_rights", "group": "程序审查", "label": "权利保障", "desc": "律师会见、讯问合法性、鉴定告知等程序完备", "evidence": "诉讼权利义务告知书、会见记录"}
+    ]
+  },
+  "合同诈骗": {
+    "charge": "合同诈骗",
+    "article_hint": "刑法第二百二十四条",
+    "category": "侵财",
+    "compare": ["诈骗", "民事欺诈", "拒不支付劳动报酬"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "个人或单位；单位犯罪时责任人员明确", "evidence": "工商登记、职务证明、决策记录"},
+      {"id": "contract", "group": "构成要件", "label": "合同名义", "desc": "在签订、履行合同过程中骗取对方财物", "evidence": "合同文本、谈判记录、履约往来"},
+      {"id": "statute_act", "group": "构成要件", "label": "法定行为方式", "desc": "以虚假名义/担保/无履约能力骗签、收受财物逃匿等法定情形之一", "evidence": "虚假资质、担保材料、逃匿证据、资金去向"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "骗取对方当事人财物的故意与非法占有目的", "evidence": "履约能力评估、资金挪用、失联逃匿"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大", "desc": "达到追诉标准", "evidence": "收款凭证、损失鉴定"},
+      {"id": "ev_civil", "group": "证据要点", "label": "刑民界分", "desc": "排除一般合同纠纷、履约不能但无非法占有目的情形", "evidence": "履约努力、协商还款、资金用于合同目的"},
+      {"id": "proc_unit", "group": "程序审查", "label": "单位犯罪程序", "desc": "对单位与责任人员的立案起诉范围正确", "evidence": "单位诉讼代表人、双罚材料"}
+    ]
+  },
+  "故意伤害": {
+    "charge": "故意伤害",
+    "article_hint": "刑法第二百三十四条；人体损伤程度鉴定标准",
+    "category": "侵犯人身",
+    "compare": ["故意杀人", "过失致人重伤", "寻衅滋事", "正当防卫"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体责任能力", "desc": "已满16周岁；已满14不满16周岁故意伤害致人重伤或死亡的可追责", "evidence": "年龄证明、精神病鉴定"},
+      {"id": "act", "group": "构成要件", "label": "伤害行为", "desc": "故意非法损害他人身体健康", "evidence": "监控、证人、工具、现场勘验"},
+      {"id": "result", "group": "构成要件", "label": "伤害结果", "desc": "致人轻伤、重伤或死亡（量刑情节分层）", "evidence": "伤情鉴定、病历、死亡证明"},
+      {"id": "causation", "group": "构成要件", "label": "因果关系", "desc": "行为与伤害结果具有刑法上因果关系", "evidence": "鉴定意见、诊疗经过、介入因素评估"},
+      {"id": "intent", "group": "构成要件", "label": "伤害故意", "desc": "明知会伤害身体而希望或放任；与杀人故意界分", "evidence": "打击部位/力度、工具、言行、事后态度"},
+      {"id": "ev_defense", "group": "证据要点", "label": "正当防卫等排除", "desc": "审查是否存在正当防卫、防卫过当、互殴等", "evidence": "起因经过、双方伤情、报警记录"},
+      {"id": "ev_tool", "group": "证据要点", "label": "凶器与伤情对应", "desc": "致伤工具与损伤形态吻合", "evidence": "物证鉴定、痕迹检验"},
+      {"id": "proc_id", "group": "程序审查", "label": "鉴定程序合法", "desc": "鉴定机构资质、检材、告知、重新鉴定权利保障", "evidence": "鉴定委托书、鉴定意见书、告知笔录"},
+      {"id": "proc_arrest", "group": "程序审查", "label": "强制措施合法", "desc": "拘留逮捕条件与羁押必要性审查", "evidence": "法律文书、羁押必要性意见"}
+    ]
+  },
+  "故意杀人": {
+    "charge": "故意杀人",
+    "article_hint": "刑法第二百三十二条",
+    "category": "侵犯人身",
+    "compare": ["故意伤害致死", "过失致人死亡"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "已满14周岁具有责任能力", "evidence": "年龄、精神状况"},
+      {"id": "act", "group": "构成要件", "label": "杀人行为", "desc": "非法剥夺他人生命的行为", "evidence": "现场、监控、物证、证人"},
+      {"id": "result", "group": "构成要件", "label": "死亡或未遂", "desc": "造成死亡，或着手实行因意志以外原因未得逞", "evidence": "法医尸检、急救记录、未遂停顿点证据"},
+      {"id": "causation", "group": "构成要件", "label": "因果关系", "desc": "行为与死亡结果之间具有因果关系", "evidence": "死因鉴定、介入因素"},
+      {"id": "intent", "group": "构成要件", "label": "杀人故意", "desc": "直接故意或间接故意剥夺生命", "evidence": "动机、预谋、打击要害、言行"},
+      {"id": "ev_exclude", "group": "证据要点", "label": "与伤害致死界分", "desc": "故意内容指向生命还是健康", "evidence": "工具选择、打击部位、持续性"},
+      {"id": "proc_forensic", "group": "程序审查", "label": "法医检验规范", "desc": "尸检、毒物、DNA等检验程序合法", "evidence": "检验报告、提取保管链"}
+    ]
+  },
+  "强奸": {
+    "charge": "强奸",
+    "article_hint": "刑法第二百三十六条",
+    "category": "侵犯人身",
+    "compare": ["强制猥亵", "负有照护职责人员性侵"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "已满14周岁；通常为男性实行，女性可构成共犯", "evidence": "身份、年龄"},
+      {"id": "act", "group": "构成要件", "label": "违背意志行为", "desc": "以暴力、胁迫或其他手段强奸妇女，或奸淫幼女", "evidence": "被害人陈述、伤痕、现场、证人、电子数据"},
+      {"id": "obj", "group": "构成要件", "label": "对象", "desc": "妇女或幼女（幼女不论同意）", "evidence": "年龄证明、身份"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知对方不同意或系幼女而实施", "evidence": "供述、聊天记录、认知可能性"},
+      {"id": "ev_consent", "group": "证据要点", "label": "同意与否审查", "desc": "排除恋爱纠纷误判；幼女绝对保护", "evidence": "前后言行、身体状况、报警及时性"},
+      {"id": "ev_bio", "group": "证据要点", "label": "生物物证", "desc": "精斑、DNA、伤情鉴定及时固定", "evidence": "法医物证、伤情照片"},
+      {"id": "proc_protect", "group": "程序审查", "label": "被害人保护", "desc": "隐私保护、询问规范、法律援助", "evidence": "询问笔录、保护措施记录"}
+    ]
+  },
+  "危险驾驶": {
+    "charge": "危险驾驶",
+    "article_hint": "刑法第一百三十三条之一",
+    "category": "危害公共安全",
+    "compare": ["交通肇事", "以危险方法危害公共安全"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "机动车驾驶人等", "evidence": "驾驶证、身份证明"},
+      {"id": "vehicle", "group": "构成要件", "label": "道路驾驶机动车", "desc": "在道路上驾驶机动车", "evidence": "现场照片、执法记录仪、道路属性说明"},
+      {"id": "circumstance", "group": "构成要件", "label": "法定情形之一", "desc": "追逐竞驶情节恶劣；醉酒驾驶；严重超员/超速的校车或旅客运输；违规运输危化品危及安全", "evidence": "呼气/血液酒精、行驶记录、超员证据、危化品单据"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知而故意实施上述危险驾驶行为", "evidence": "供述、饮酒经过、同行证人"},
+      {"id": "ev_alcohol", "group": "证据要点", "label": "酒精检测规范", "desc": "呼气与血液检测程序、时间、保管合规；排除假阳性", "evidence": "检测单、抽血笔录、鉴定意见"},
+      {"id": "ev_upgrade", "group": "证据要点", "label": "是否升格他罪", "desc": "有无肇事后果或危害公共安全升格可能", "evidence": "事故责任认定、伤亡情况"},
+      {"id": "proc_sample", "group": "程序审查", "label": "检材保管链", "desc": "血样提取、密封、送检、复检权利", "evidence": "提取笔录、送检记录"}
+    ]
+  },
+  "交通肇事": {
+    "charge": "交通肇事",
+    "article_hint": "刑法第一百三十三条；《关于审理交通肇事刑事案件具体应用法律若干问题的解释》",
+    "category": "危害公共安全",
+    "compare": ["危险驾驶", "以危险方法危害公共安全", "过失致人死亡"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "一般主体（含非交通运输人员）", "evidence": "驾驶人身份、车辆权属"},
+      {"id": "violate", "group": "构成要件", "label": "违反交管法规", "desc": "违反交通运输管理法规", "evidence": "事故认定书、监控、鉴定"},
+      {"id": "result", "group": "构成要件", "label": "重大事故后果", "desc": "致人重伤、死亡或使公私财产遭受重大损失", "evidence": "伤情/死亡证明、财产损失鉴定"},
+      {"id": "causation", "group": "构成要件", "label": "因果关系与责任", "desc": "违章行为与事故结果有因果关系；责任划分达到追诉标准", "evidence": "事故责任认定、痕迹鉴定"},
+      {"id": "fault", "group": "构成要件", "label": "过失", "desc": "疏忽大意或过于自信过失（排除故意）", "evidence": "行驶状态、明知危险仍放任则可能他罪"},
+      {"id": "ev_escape", "group": "证据要点", "label": "逃逸情节", "desc": "是否逃逸及逃逸致人死亡", "evidence": "离开现场经过、救助情况、报警记录"},
+      {"id": "proc_duty", "group": "程序审查", "label": "责任认定审查", "desc": "事故认定书是否依法作出、有无复议/重新认定", "evidence": "认定书、异议材料"}
+    ]
+  },
+  "以危险方法危害公共安全": {
+    "charge": "以危险方法危害公共安全",
+    "article_hint": "刑法第一百一十四条、第一百一十五条",
+    "category": "危害公共安全",
+    "compare": ["危险驾驶", "交通肇事", "故意伤害"],
+    "elements": [
+      {"id": "method", "group": "构成要件", "label": "危险方法", "desc": "与放火、决水、爆炸等危险性相当的方法", "evidence": "行为方式、工具、场所人员密集程度"},
+      {"id": "public", "group": "构成要件", "label": "危害公共安全", "desc": "危及不特定或多数人的生命、健康或重大公私财产安全", "evidence": "现场环境、可能波及范围"},
+      {"id": "result", "group": "构成要件", "label": "实害或危险", "desc": "尚未造成严重后果（114）或致人重伤、死亡或重大损失（115）", "evidence": "伤亡鉴定、财产损失"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知危险方法会危害公共安全而希望或放任", "evidence": "主观认识、事先明知"},
+      {"id": "ev_compare", "group": "证据要点", "label": "口袋罪慎用", "desc": "能适用特别法条（如危险驾驶、交通肇事）的优先特别法", "evidence": "行为是否具有与放火爆炸相当的危险性"},
+      {"id": "proc_expert", "group": "程序审查", "label": "危险性论证充分", "desc": "起诉书说理与证据足以支撑公共危险判断", "evidence": "鉴定、现场重建、专家意见"}
+    ]
+  },
+  "抢劫": {
+    "charge": "抢劫",
+    "article_hint": "刑法第二百六十三条",
+    "category": "侵财",
+    "compare": ["抢夺", "敲诈勒索", "盗窃转化抢劫"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "已满14周岁", "evidence": "年龄证明"},
+      {"id": "violence", "group": "构成要件", "label": "暴力胁迫或其他方法", "desc": "对人身实施暴力、胁迫或其他足以压制反抗的方法", "evidence": "伤情、工具、监控、被害人陈述"},
+      {"id": "seize", "group": "构成要件", "label": "强取财物", "desc": "当场强行劫取公私财物", "evidence": "财物转移过程、扣押赃物"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "以非法占有为目的", "evidence": "供述、销赃、使用情况"},
+      {"id": "agg", "group": "构成要件", "label": "加重情节审查", "desc": "入户、公共交通工具、冒充军警、持枪、多次、数额巨大、致人重伤死亡等", "evidence": "场所性质、枪支鉴定、伤亡结果"},
+      {"id": "ev_transform", "group": "证据要点", "label": "转化型抢劫", "desc": "盗窃/诈骗/抢夺后为窝藏赃物、抗拒抓捕、毁灭罪证而当场使用暴力", "evidence": "先行行为证据、暴力时间地点「当场」"},
+      {"id": "proc_weapon", "group": "程序审查", "label": "枪支刀具鉴定", "desc": "持枪抢劫等情节鉴定合法", "evidence": "枪弹痕迹鉴定"}
+    ]
+  },
+  "抢夺": {
+    "charge": "抢夺",
+    "article_hint": "刑法第二百六十七条",
+    "category": "侵财",
+    "compare": ["抢劫", "盗窃"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "主体", "desc": "一般主体", "evidence": "身份证明"},
+      {"id": "act", "group": "构成要件", "label": "公然夺取", "desc": "乘人不备公然夺取财物，未达压制反抗程度", "evidence": "监控、被害人陈述"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大等", "desc": "数额较大或多次抢夺等", "evidence": "价格鉴定、前科"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "以非法占有为目的", "evidence": "销赃、逃窜"},
+      {"id": "ev_compare", "group": "证据要点", "label": "与抢劫界分", "desc": "是否对人使用足以压制反抗的暴力", "evidence": "拉扯程度、伤情、威胁内容"},
+      {"id": "proc_value", "group": "程序审查", "label": "数额证据", "desc": "核价合法", "evidence": "鉴定意见"}
+    ]
+  },
+  "敲诈勒索": {
+    "charge": "敲诈勒索",
+    "article_hint": "刑法第二百七十四条",
+    "category": "侵财",
+    "compare": ["抢劫", "诈骗", "绑架"],
+    "elements": [
+      {"id": "threat", "group": "构成要件", "label": "威胁或要挟", "desc": "以恶害相通告，使对方产生恐惧", "evidence": "短信、通话、聊天记录、证人"},
+      {"id": "fear", "group": "构成要件", "label": "恐惧处分", "desc": "对方因恐惧交付财物或财产性利益", "evidence": "交付过程、被害人陈述"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大等", "desc": "达到追诉标准或多次敲诈", "evidence": "金额凭证"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "以非法占有为目的", "evidence": "索要内容、资金去向"},
+      {"id": "ev_right", "group": "证据要点", "label": "权利行使抗辩", "desc": "排除为讨要合法债务而轻微威胁等情形的定性争议", "evidence": "债权债务关系证明"},
+      {"id": "proc_electronic", "group": "程序审查", "label": "电子证据合法", "desc": "取证固定规范", "evidence": "提取笔录"}
+    ]
+  },
+  "掩饰、隐瞒犯罪所得": {
+    "charge": "掩饰、隐瞒犯罪所得、犯罪所得收益",
+    "article_hint": "刑法第三百一十二条",
+    "category": "妨害司法",
+    "compare": ["洗钱", "窝藏"],
+    "elements": [
+      {"id": "upstream", "group": "构成要件", "label": "上游犯罪所得", "desc": "明知是犯罪所得及其收益", "evidence": "上游案件材料、供述、交易异常"},
+      {"id": "act", "group": "构成要件", "label": "掩饰隐瞒行为", "desc": "窝藏、转移、收购、代为销售或以其他方法掩饰隐瞒", "evidence": "转账、过户、拆分账户、物流"},
+      {"id": "know", "group": "构成要件", "label": "明知", "desc": "知道或应当知道系犯罪所得", "evidence": "价格异常、关系、事先通谋"},
+      {"id": "amount", "group": "构成要件", "label": "情节/数额", "desc": "达到追诉标准", "evidence": "金额汇总"},
+      {"id": "ev_complicity", "group": "证据要点", "label": "与上游共犯界分", "desc": "事前通谋则以上游共犯论处", "evidence": "通谋时间点"},
+      {"id": "proc_up", "group": "程序审查", "label": "上游事实清楚", "desc": "上游犯罪查证或可确认系犯罪所得", "evidence": "上游判决/起诉意见书"}
+    ]
+  },
+  "开设赌场": {
+    "charge": "开设赌场",
+    "article_hint": "刑法第三百零三条第二款",
+    "category": "妨害社会管理秩序",
+    "compare": ["赌博", "非法经营"],
+    "elements": [
+      {"id": "open", "group": "构成要件", "label": "开设赌场行为", "desc": "开设赌场或聚众赌博中符合开设赌场情形；含网络赌场", "evidence": "场地、设备、抽头、组织人员结构"},
+      {"id": "org", "group": "构成要件", "label": "组织经营性", "desc": "提供赌博场所、赌具、筹码或网络平台并抽头营利等", "evidence": "流水、代理层级、宣传招揽"},
+      {"id": "intent", "group": "构成要件", "label": "故意与营利", "desc": "明知而开设，通常具有营利目的", "evidence": "抽头记录、供述"},
+      {"id": "ev_net", "group": "证据要点", "label": "网络赌场证据", "desc": "服务器、账号、资金通道闭合", "evidence": "电子数据、资金链路"},
+      {"id": "proc_elec", "group": "程序审查", "label": "电子数据取证", "desc": "远程勘验、提取合法", "evidence": "勘验笔录、鉴定"}
+    ]
+  },
+  "帮助信息网络犯罪活动": {
+    "charge": "帮助信息网络犯罪活动",
+    "article_hint": "刑法第二百八十七条之二",
+    "category": "妨害社会管理秩序",
+    "compare": ["掩饰隐瞒犯罪所得", "诈骗共犯", "非法利用信息网络"],
+    "elements": [
+      {"id": "help", "group": "构成要件", "label": "帮助行为", "desc": "为信息网络犯罪提供互联网接入、服务器、支付结算、广告推广等帮助", "evidence": "技术服务合同、支付通道、账号买卖记录"},
+      {"id": "know", "group": "构成要件", "label": "明知", "desc": "明知他人利用信息网络实施犯罪", "evidence": "价格异常、事先告知、行业经验、拒不履行监管义务"},
+      {"id": "plot", "group": "构成要件", "label": "情节严重", "desc": "达到情节严重追诉标准", "evidence": "数量、金额、对象、后果"},
+      {"id": "ev_up", "group": "证据要点", "label": "上游关联", "desc": "与上游网络犯罪具有帮助关系", "evidence": "资金/技术流向上游"},
+      {"id": "ev_complicity", "group": "证据要点", "label": "共犯与帮信界分", "desc": "事前通谋或深度参与可能构成上游共犯", "evidence": "通谋、分成、角色"},
+      {"id": "proc_data", "group": "程序审查", "label": "电子数据与鉴定", "desc": "数据提取鉴定合法", "evidence": "提取笔录、司法鉴定"}
+    ]
+  },
+  "非法吸收公众存款": {
+    "charge": "非法吸收公众存款",
+    "article_hint": "刑法第一百七十六条；《关于审理非法集资刑事案件具体应用法律若干问题的解释》",
+    "category": "破坏金融管理秩序",
+    "compare": ["集资诈骗", "非法经营"],
+    "elements": [
+      {"id": "illegal", "group": "构成要件", "label": "非法性", "desc": "未经有关部门依法许可或借用合法经营形式吸收资金", "evidence": "许可文件缺失、监管函"},
+      {"id": "public", "group": "构成要件", "label": "公开性", "desc": "通过媒体、推介会、传单、手机短信等向社会公开宣传", "evidence": "宣传材料、群发记录"},
+      {"id": "social", "group": "构成要件", "label": "社会性", "desc": "向社会不特定对象吸收资金", "evidence": "投资人名册、人数地域分布"},
+      {"id": "promise", "group": "构成要件", "label": "利诱性", "desc": "承诺在一定期限内还本付息或给付回报", "evidence": "合同、宣传口径"},
+      {"id": "amount", "group": "构成要件", "label": "数额/人数/后果", "desc": "达到追诉标准", "evidence": "审计、流水、报案材料"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知非法吸收仍实施；单位犯罪审查决策层", "evidence": "决策会议、明知证据"},
+      {"id": "ev_vs_fraud", "group": "证据要点", "label": "与集资诈骗界分", "desc": "有无非法占有目的（携款逃匿、肆意挥霍等）", "evidence": "资金用途、归还能力、逃匿"},
+      {"id": "proc_audit", "group": "程序审查", "label": "审计鉴定", "desc": "资金审计程序合法、结论可采", "evidence": "审计报告、鉴材"}
+    ]
+  },
+  "集资诈骗": {
+    "charge": "集资诈骗",
+    "article_hint": "刑法第一百九十二条",
+    "category": "金融诈骗",
+    "compare": ["非法吸收公众存款", "诈骗"],
+    "elements": [
+      {"id": "illegal_fund", "group": "构成要件", "label": "非法集资行为", "desc": "使用诈骗方法非法集资", "evidence": "公开宣传、不特定对象、承诺回报"},
+      {"id": "fraud_method", "group": "构成要件", "label": "诈骗方法", "desc": "虚构资金用途、虚假证明文件、虚假高回报等", "evidence": "虚假项目材料、宣传话术"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "具有非法占有目的（司法解释典型情形）", "evidence": "逃匿、挥霍、抽逃、拒不交代去向"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大等", "desc": "达到数额标准", "evidence": "审计、损失确认"},
+      {"id": "ev_compare", "group": "证据要点", "label": "与非吸界分", "desc": "关键在非法占有目的是否成立", "evidence": "资金真实经营情况"},
+      {"id": "proc_victim", "group": "程序审查", "label": "集资参与人权益", "desc": "参与人诉讼权利、退赔审查", "evidence": "公告、参与人名单"}
+    ]
+  },
+  "贪污": {
+    "charge": "贪污",
+    "article_hint": "刑法第三百八十二条、第三百八十三条",
+    "category": "职务犯罪",
+    "compare": ["挪用公款", "私分国有资产", "职务侵占"],
+    "elements": [
+      {"id": "status", "group": "构成要件", "label": "国家工作人员", "desc": "符合刑法第九十三条国家工作人员范围", "evidence": "任职文件、委派关系、公务证明"},
+      {"id": "duty", "group": "构成要件", "label": "利用职务便利", "desc": "利用职务上主管、管理、经手公共财物的便利", "evidence": "职责分工、审批权限"},
+      {"id": "act", "group": "构成要件", "label": "侵吞窃取骗取等", "desc": "侵吞、窃取、骗取或以其他手段非法占有公共财物", "evidence": "账目、虚假发票、套取记录"},
+      {"id": "public_prop", "group": "构成要件", "label": "公共财物", "desc": "对象为公共财物", "evidence": "产权属性、财务资料"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "意图非法占有", "evidence": "赃款去向、隐瞒手段"},
+      {"id": "amount", "group": "构成要件", "label": "数额与情节", "desc": "对应量刑档次数额、情节", "evidence": "司法会计鉴定"},
+      {"id": "ev_compare", "group": "证据要点", "label": "与挪用界分", "desc": "是否具有永久占有故意、是否归还意思", "evidence": "账务处理、归还行为"},
+      {"id": "proc_discipline", "group": "程序审查", "label": "监察程序衔接", "desc": "监察调查与刑事程序衔接合法，证据转化规范", "evidence": "移送文书、同步录音录像、权利告知"}
+    ]
+  },
+  "受贿": {
+    "charge": "受贿",
+    "article_hint": "刑法第三百八十五条、第三百八十六条",
+    "category": "职务犯罪",
+    "compare": ["利用影响力受贿", "非国家工作人员受贿", "贪污"],
+    "elements": [
+      {"id": "status", "group": "构成要件", "label": "国家工作人员", "desc": "主体为国家工作人员", "evidence": "任职、公务证明"},
+      {"id": "duty", "group": "构成要件", "label": "利用职务便利", "desc": "利用本人职务范围内的权力或地位形成的便利条件", "evidence": "职权事项、请托事项对应关系"},
+      {"id": "seek", "group": "构成要件", "label": "为他人谋取利益", "desc": "承诺、实施或实现为他人谋利（含事后受贿情形依法审查）", "evidence": "批示、关照行为、请托记录"},
+      {"id": "accept", "group": "构成要件", "label": "索取或收受财物", "desc": "索取他人财物，或非法收受他人财物", "evidence": "转账、现金、物品、股权、房产过户"},
+      {"id": "amount", "group": "构成要件", "label": "数额与情节", "desc": "达到相应数额、情节标准", "evidence": "估价鉴定、财物清单"},
+      {"id": "ev_briber", "group": "证据要点", "label": "行受贿印证", "desc": "行贿人与受贿人口供及客观证据相互印证", "evidence": "双方供述、书证、电子数据"},
+      {"id": "ev_disguise", "group": "证据要点", "label": "变相受贿", "desc": "交易型、干股型、委托理财型等变相受贿审查", "evidence": "明显偏离市价的交易材料"},
+      {"id": "proc_monitor", "group": "程序审查", "label": "监察证据合法", "desc": "调查措施、留置、同步录音录像合法", "evidence": "文书、录像、移送清单"}
+    ]
+  },
+  "挪用公款": {
+    "charge": "挪用公款",
+    "article_hint": "刑法第三百八十四条",
+    "category": "职务犯罪",
+    "compare": ["贪污", "挪用资金"],
+    "elements": [
+      {"id": "status", "group": "构成要件", "label": "国家工作人员", "desc": "主体适格", "evidence": "任职证明"},
+      {"id": "duty", "group": "构成要件", "label": "职务便利", "desc": "利用职务上的便利", "evidence": "经管公款职责"},
+      {"id": "act", "group": "构成要件", "label": "挪用行为", "desc": "挪用公款归个人使用：非法活动/营利活动/超三个月未还等法定情形", "evidence": "出账凭证、使用去向、时间"},
+      {"id": "intent", "group": "构成要件", "label": "挪用故意", "desc": "暂时挪用故意，非非法占有（与贪污界分）", "evidence": "账务处理、归还意思与行为"},
+      {"id": "amount", "group": "构成要件", "label": "数额与用途", "desc": "对应不同用途的数额标准", "evidence": "司法会计鉴定"},
+      {"id": "ev_personal", "group": "证据要点", "label": "归个人使用认定", "desc": "个人使用、借贷给他人、以个人名义等", "evidence": "实际使用人、名义"},
+      {"id": "proc_audit", "group": "程序审查", "label": "审计鉴定", "desc": "鉴定合法可采", "evidence": "鉴定意见"}
+    ]
+  },
+  "职务侵占": {
+    "charge": "职务侵占",
+    "article_hint": "刑法第二百七十一条",
+    "category": "侵财",
+    "compare": ["贪污", "盗窃", "挪用资金"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "公司企业或其他单位人员", "desc": "非国家工作人员主体", "evidence": "劳动合同、任职"},
+      {"id": "duty", "group": "构成要件", "label": "利用职务便利", "desc": "利用职务上的便利", "evidence": "岗位职责"},
+      {"id": "act", "group": "构成要件", "label": "非法占有本单位财物", "desc": "将本单位财物非法占为己有", "evidence": "账目、虚假报销、截留"},
+      {"id": "amount", "group": "构成要件", "label": "数额较大等", "desc": "达到追诉标准", "evidence": "审计、鉴定"},
+      {"id": "intent", "group": "构成要件", "label": "非法占有目的", "desc": "非法占有故意", "evidence": "赃款去向"},
+      {"id": "ev_vs_graft", "group": "证据要点", "label": "与贪污界分", "desc": "主体是否国家工作人员、财物是否公共财物", "evidence": "主体身份与财物属性"},
+      {"id": "proc_audit", "group": "程序审查", "label": "审计程序", "desc": "审计合法", "evidence": "审计报告"}
+    ]
+  },
+  "寻衅滋事": {
+    "charge": "寻衅滋事",
+    "article_hint": "刑法第二百九十三条；两高《关于办理寻衅滋事刑事案件适用法律若干问题的解释》",
+    "category": "妨害社会管理秩序",
+    "compare": ["故意伤害", "敲诈勒索", "强迫交易"],
+    "elements": [
+      {"id": "motive", "group": "构成要件", "label": "流氓动机/寻求刺激等", "desc": "无事生非或借故生非等动机", "evidence": "起因、言行、前科劣迹"},
+      {"id": "act", "group": "构成要件", "label": "法定行为方式", "desc": "随意殴打、追逐拦截辱骂恐吓、强拿硬要、起哄闹事等", "evidence": "监控、被害人、证人"},
+      {"id": "plot", "group": "构成要件", "label": "情节恶劣/严重", "desc": "达到情节恶劣或严重、严重破坏社会秩序", "evidence": "伤情、次数、场所、影响"},
+      {"id": "ev_compare", "group": "证据要点", "label": "特别法优先", "desc": "符合故意伤害、敲诈等特别构成时优先特别罪名", "evidence": "伤情等级、勒索内容"},
+      {"id": "proc_public", "group": "程序审查", "label": "公共秩序影响证据", "desc": "破坏社会秩序的证明充分", "evidence": "现场秩序、报警处警"}
+    ]
+  },
+  "聚众斗殴": {
+    "charge": "聚众斗殴",
+    "article_hint": "刑法第二百九十二条",
+    "category": "妨害社会管理秩序",
+    "compare": ["故意伤害", "寻衅滋事"],
+    "elements": [
+      {"id": "crowd", "group": "构成要件", "label": "聚众", "desc": "纠集多人", "evidence": "纠集通讯、到场人员"},
+      {"id": "fight", "group": "构成要件", "label": "斗殴", "desc": "双方或多方殴斗", "evidence": "监控、伤情、证人"},
+      {"id": "role", "group": "构成要件", "label": "首要分子或其他积极参加者", "desc": "处罚首要分子和积极参加者", "evidence": "组织指挥、率先动手等作用证据"},
+      {"id": "agg", "group": "构成要件", "label": "加重情节", "desc": "多次、规模大、公共场所、持械等", "evidence": "器械、场所、次数"},
+      {"id": "ev_upgrade", "group": "证据要点", "label": "转化伤害/杀人", "desc": "致人重伤、死亡的转化定罪", "evidence": "伤亡结果与责任"},
+      {"id": "proc_id", "group": "程序审查", "label": "参与人作用区分", "desc": "避免打击面不当", "evidence": "角色证据分层"}
+    ]
+  },
+  "妨害公务": {
+    "charge": "妨害公务",
+    "article_hint": "刑法第二百七十七条",
+    "category": "妨害社会管理秩序",
+    "compare": ["袭警", "故意伤害"],
+    "elements": [
+      {"id": "duty_act", "group": "构成要件", "label": "依法执行职务", "desc": "国家机关工作人员依法执行职务", "evidence": "执法身份、执法依据、执法过程记录"},
+      {"id": "violence", "group": "构成要件", "label": "暴力威胁方法", "desc": "以暴力、威胁方法阻碍", "evidence": "伤情、威胁内容、执法记录仪"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知是依法执行职务而阻碍", "evidence": "认知可能性、告知情况"},
+      {"id": "ev_legal", "group": "证据要点", "label": "职务合法性审查", "desc": "执行职务本身须合法，否则可能阻却本罪", "evidence": "法律文书、程序合法性"},
+      {"id": "proc_video", "group": "程序审查", "label": "执法视听资料", "desc": "完整调取执法记录仪等", "evidence": "视听资料提取说明"}
+    ]
+  },
+  "袭警": {
+    "charge": "袭警",
+    "article_hint": "刑法第二百七十七条第五款",
+    "category": "妨害社会管理秩序",
+    "compare": ["妨害公务", "故意伤害"],
+    "elements": [
+      {"id": "police", "group": "构成要件", "label": "对象为警察", "desc": "暴力袭击正在依法执行职务的人民警察", "evidence": "警察身份、执勤状态"},
+      {"id": "assault", "group": "构成要件", "label": "暴力袭击", "desc": "实施暴力袭击行为", "evidence": "执法记录仪、伤情、证人"},
+      {"id": "duty", "group": "构成要件", "label": "依法执行职务", "desc": "警察正在依法执行职务", "evidence": "出警记录、执法依据"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知是警察执行职务而袭击", "evidence": "供述、现场认知"},
+      {"id": "ev_weapon", "group": "证据要点", "label": "加重情节", "desc": "使用枪支、管制刀具或驾驶机动车撞击等", "evidence": "工具鉴定、车辆痕迹"},
+      {"id": "proc_video", "group": "程序审查", "label": "视听资料完整", "desc": "关键片段无选择性剪辑争议", "evidence": "原始存储介质说明"}
+    ]
+  },
+  "容留他人吸毒": {
+    "charge": "容留他人吸毒",
+    "article_hint": "刑法第三百五十四条",
+    "category": "妨害社会管理秩序",
+    "compare": ["非法持有毒品", "贩卖毒品"],
+    "elements": [
+      {"id": "place", "group": "构成要件", "label": "提供场所", "desc": "提供场所供他人吸食、注射毒品", "evidence": "场所控制权、门锁钥匙、租赁关系"},
+      {"id": "drug_use", "group": "构成要件", "label": "他人吸毒事实", "desc": "被容留人实施了吸毒行为", "evidence": "尿检/毛发、烟具、供述"},
+      {"id": "know", "group": "构成要件", "label": "明知", "desc": "明知他人吸毒而容留", "evidence": "同场经过、事先知晓"},
+      {"id": "plot", "group": "构成要件", "label": "追诉标准", "desc": "人数、次数等达到立案追诉标准", "evidence": "人数次数统计"},
+      {"id": "ev_vs_traffic", "group": "证据要点", "label": "与贩卖界分", "desc": "有无提供毒品、收取毒资等升级情节", "evidence": "资金往来、毒品来源"},
+      {"id": "proc_test", "group": "程序审查", "label": "检测鉴定合法", "desc": "生物样本检测程序合规", "evidence": "检测报告"}
+    ]
+  },
+  "非法持有毒品": {
+    "charge": "非法持有毒品",
+    "article_hint": "刑法第三百四十八条",
+    "category": "妨害社会管理秩序",
+    "compare": ["贩卖毒品", "运输毒品"],
+    "elements": [
+      {"id": "hold", "group": "构成要件", "label": "持有状态", "desc": "实际占有、携带、藏匿或以其他方式控制毒品", "evidence": "查获位置、控制关系"},
+      {"id": "drug", "group": "构成要件", "label": "毒品属性与数量", "desc": "经鉴定为毒品且达到数量标准", "evidence": "称重、鉴定意见、抽样"},
+      {"id": "illegal", "group": "构成要件", "label": "非法性", "desc": "未经合法授权持有", "evidence": "有无药用许可等"},
+      {"id": "know", "group": "构成要件", "label": "明知", "desc": "明知是毒品而持有", "evidence": "供述、藏匿方式、经验常识"},
+      {"id": "ev_vs_traffic", "group": "证据要点", "label": "与走私贩卖运输制造界分", "desc": "有证据证明走私贩卖运输制造的按他罪", "evidence": "交易约定、运输行为、上下家"},
+      {"id": "proc_seize", "group": "程序审查", "label": "称重鉴定程序", "desc": "见证人、封存、鉴定抽样规范", "evidence": "扣押笔录、鉴定委托"}
+    ]
+  },
+  "贩卖毒品": {
+    "charge": "贩卖毒品",
+    "article_hint": "刑法第三百四十七条",
+    "category": "妨害社会管理秩序",
+    "compare": ["非法持有毒品", "运输毒品"],
+    "elements": [
+      {"id": "sell", "group": "构成要件", "label": "贩卖行为", "desc": "有偿转让毒品或以贩卖为目的而非法收购", "evidence": "交易约定、付款、交付"},
+      {"id": "drug", "group": "构成要件", "label": "毒品与数量", "desc": "毒品性质、数量影响定罪量刑", "evidence": "鉴定、称重"},
+      {"id": "know", "group": "构成要件", "label": "明知", "desc": "明知是毒品", "evidence": "供述、隐语、包装方式"},
+      {"id": "ev_trap", "group": "证据要点", "label": "诱惑侦查审查", "desc": "机会提供型与犯意引诱型区分，影响量刑甚至定性", "evidence": "侦查方案、通讯记录"},
+      {"id": "proc_chain", "group": "程序审查", "label": "毒品保管链", "desc": "扣押、保管、鉴定全程可追溯", "evidence": "流转记录"}
+    ]
+  },
+  "拒不执行判决、裁定": {
+    "charge": "拒不执行判决、裁定",
+    "article_hint": "刑法第三百一十三条",
+    "category": "妨害司法",
+    "compare": ["非法处置查封扣押冻结财产"],
+    "elements": [
+      {"id": "effective", "group": "构成要件", "label": "生效裁判", "desc": "有人民法院生效判决、裁定", "evidence": "裁判文书、生效证明"},
+      {"id": "ability", "group": "构成要件", "label": "有能力执行", "desc": "有能力执行而拒不执行", "evidence": "财产状况、收入、隐匿转移证据"},
+      {"id": "refuse", "group": "构成要件", "label": "拒不执行情节严重", "desc": "达到情节严重情形", "evidence": "执行笔录、拒执行为证据"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知而拒不执行", "evidence": "送达、约谈、警告记录"},
+      {"id": "ev_ability", "group": "证据要点", "label": "履行能力查实", "desc": "排除确无能力情形", "evidence": "银行查询、不动产、股权"},
+      {"id": "proc_exec", "group": "程序审查", "label": "执行程序衔接", "desc": "执行立案、移送刑事程序合法", "evidence": "执行卷宗材料"}
+    ]
+  },
+  "虚假诉讼": {
+    "charge": "虚假诉讼",
+    "article_hint": "刑法第三百零七条之一",
+    "category": "妨害司法",
+    "compare": ["诈骗", "妨害作证"],
+    "elements": [
+      {"id": "fake", "group": "构成要件", "label": "捏造事实起诉", "desc": "以捏造的事实提起民事诉讼", "evidence": "虚假证据、通谋材料"},
+      {"id": "plot", "group": "构成要件", "label": "妨害司法或目的", "desc": "妨害司法秩序或严重侵害他人合法权益", "evidence": "诉讼过程、裁判结果、受害情况"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知捏造仍提起诉讼", "evidence": "通谋聊天、指使作伪证"},
+      {"id": "ev_civil", "group": "证据要点", "label": "民刑交叉", "desc": "与错误诉讼、证据不足败诉界分", "evidence": "是否存在捏造与恶意串通"},
+      {"id": "proc_transfer", "group": "程序审查", "label": "法院移送材料", "desc": "民事案卷关键证据移送齐全", "evidence": "移送函、卷宗"}
+    ]
+  },
+  "重大责任事故": {
+    "charge": "重大责任事故",
+    "article_hint": "刑法第一百三十四条",
+    "category": "危害公共安全",
+    "compare": ["重大劳动安全事故", "危险物品肇事"],
+    "elements": [
+      {"id": "subj", "group": "构成要件", "label": "生产作业人员等", "desc": "在生产、作业中的责任人员", "evidence": "岗位职责、劳动合同"},
+      {"id": "violate", "group": "构成要件", "label": "违反安全管理规定", "desc": "违反有关安全管理的规定", "evidence": "规章、操作规程、隐患通知"},
+      {"id": "result", "group": "构成要件", "label": "重大伤亡或损失", "desc": "发生重大伤亡事故或造成其他严重后果", "evidence": "事故调查报告、伤亡鉴定"},
+      {"id": "causation", "group": "构成要件", "label": "因果关系", "desc": "违规与事故结果有因果关系", "evidence": "调查报告、鉴定"},
+      {"id": "fault", "group": "构成要件", "label": "过失", "desc": "过失责任", "evidence": "预见可能与注意义务"},
+      {"id": "ev_duty", "group": "证据要点", "label": "责任划分", "desc": "直接责任与管理责任区分", "evidence": "职责清单、签字审批"},
+      {"id": "proc_report", "group": "程序审查", "label": "事故调查报告", "desc": "调查主体与程序合法，证据转化规范", "evidence": "调查报告及附件"}
+    ]
+  },
+  "生产、销售伪劣产品": {
+    "charge": "生产、销售伪劣产品",
+    "article_hint": "刑法第一百四十条",
+    "category": "破坏社会主义市场经济秩序",
+    "compare": ["生产销售假药", "非法经营"],
+    "elements": [
+      {"id": "act", "group": "构成要件", "label": "生产或销售", "desc": "生产者、销售者掺杂掺假、以假充真、以次充好或不合格冒充合格", "evidence": "生产记录、销售台账、样品"},
+      {"id": "pseudo", "group": "构成要件", "label": "伪劣产品", "desc": "产品属伪劣", "evidence": "质量鉴定、抽检报告"},
+      {"id": "amount", "group": "构成要件", "label": "销售金额", "desc": "销售金额五万元以上等标准", "evidence": "审计、流水、出货单"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知伪劣而生产销售", "evidence": "进货渠道、价格异常、逃避检查"},
+      {"id": "ev_special", "group": "证据要点", "label": "特别法条竞合", "desc": "假药、不符合安全标准食品等优先特别罪名", "evidence": "产品类别鉴定"},
+      {"id": "proc_sample", "group": "程序审查", "label": "抽样鉴定", "desc": "抽样代表性与鉴定资质", "evidence": "抽样笔录、鉴定意见"}
+    ]
+  },
+  "非法经营": {
+    "charge": "非法经营",
+    "article_hint": "刑法第二百二十五条",
+    "category": "破坏社会主义市场经济秩序",
+    "compare": ["非法吸收公众存款", "开设赌场"],
+    "elements": [
+      {"id": "license", "group": "构成要件", "label": "违反国家规定", "desc": "违反国家规定的非法经营行为", "evidence": "相关行政许可规定、无证证明"},
+      {"id": "type", "group": "构成要件", "label": "法定行为类型", "desc": "专营专卖、买卖许可证、非法经营证券期货保险资金支付结算或其他严重扰乱市场秩序行为", "evidence": "经营内容、资金通道"},
+      {"id": "plot", "group": "构成要件", "label": "情节严重", "desc": "达到情节严重标准", "evidence": "数额、违法所得、后果"},
+      {"id": "intent", "group": "构成要件", "label": "故意", "desc": "明知无许可或违规仍经营", "evidence": "供述、通知整改仍继续"},
+      {"id": "ev_pocket", "group": "证据要点", "label": "口袋罪限制", "desc": "「其他」项须有立法/司法解释明确或同类解释空间充分", "evidence": "规范依据检索"},
+      {"id": "proc_admin", "group": "程序审查", "label": "行刑衔接", "desc": "行政处罚与刑事移送材料齐全", "evidence": "行政处罚决定、移送书"}
+    ]
+  },
+  "侵犯公民个人信息": {
+    "charge": "侵犯公民个人信息",
+    "article_hint": "刑法第二百五十三条之一",
+    "category": "侵犯人身",
+    "compare": ["非法获取计算机信息系统数据", "帮助信息网络犯罪活动"],
+    "elements": [
+      {"id": "info", "group": "构成要件", "label": "公民个人信息", "desc": "以电子或其他方式记录的能够单独或结合识别自然人身份或反映活动情况的信息", "evidence": "数据样本、字段说明"},
+      {"id": "act", "group": "构成要件", "label": "侵犯行为", "desc": "窃取、出售、提供或以其他方法非法获取", "evidence": "买卖记录、撞库日志、聊天记录"},
+      {"id": "plot", "group": "构成要件", "label": "情节严重", "desc": "数量、违法所得、用途等达到追诉标准", "evidence": "条数统计、鉴定、获利"},
+      {"id": "know", "group": "构成要件", "label": "故意", "desc": "明知而实施", "evidence": "供述、价格、隐匿手段"},
+      {"id": "ev_lawful", "group": "证据要点", "label": "合法处理排除", "desc": "排除依法收集并经同意或法定事由", "evidence": "授权、隐私政策、业务必要性"},
+      {"id": "proc_data", "group": "程序审查", "label": "电子数据取证", "desc": "提取鉴定合法，数量认定方法科学", "evidence": "提取笔录、去重说明"}
+    ]
+  },
+  "公益诉讼（行政）": {
+    "charge": "行政公益诉讼（审查要点）",
+    "article_hint": "行政诉讼法第二十五条第四款；公益诉讼相关司法解释",
+    "category": "公益诉讼",
+    "compare": [],
+    "elements": [
+      {"id": "field", "group": "构成要件", "label": "法定领域", "desc": "生态环境和资源保护、食品药品安全、国有财产保护、国有土地使用权出让等领域", "evidence": "案件领域材料"},
+      {"id": "illegal", "group": "构成要件", "label": "行政机关违法或怠于履职", "desc": "违法行使职权或不作为", "evidence": "行政职责规范、履职情况"},
+      {"id": "interest", "group": "构成要件", "label": "国家利益或社会公共利益受损", "desc": "致使国家利益或社会公共利益受到侵害", "evidence": "损害评估、现场检查"},
+      {"id": "pre_proc", "group": "构成要件", "label": "诉前程序", "desc": "检察建议等诉前程序已履行且未纠正或回复", "evidence": "检察建议、送达回证、回复"},
+      {"id": "ev_duty", "group": "证据要点", "label": "法定职责清晰", "desc": "职责来源与履职标准明确", "evidence": "三定方案、法律法规"},
+      {"id": "proc_suggest", "group": "程序审查", "label": "诉前程序完备", "desc": "期限、送达、跟进调查齐全", "evidence": "卷宗节点文书"}
+    ]
+  },
+  "公益诉讼（民事）": {
+    "charge": "民事公益诉讼（审查要点）",
+    "article_hint": "民事诉讼法第五十八条；消费/环境民事公益诉讼司法解释",
+    "category": "公益诉讼",
+    "compare": [],
+    "elements": [
+      {"id": "standing", "group": "构成要件", "label": "起诉主体适格", "desc": "法律规定的机关和有关组织；检察院在履行职责中发现且无适格主体或主体不起诉等情形", "evidence": "线索来源、公告、组织起诉情况"},
+      {"id": "harm", "group": "构成要件", "label": "公益受损", "desc": "污染环境、侵害众多消费者合法权益等损害社会公共利益", "evidence": "鉴定、检测、受害群体"},
+      {"id": "act", "group": "构成要件", "label": "侵权行为与责任", "desc": "行为违法性、损害、因果、过错（环境侵权规则依特别法）", "evidence": "监测报告、因果鉴定"},
+      {"id": "claim", "group": "构成要件", "label": "诉讼请求适当", "desc": "停止侵害、修复、赔偿损失、赔礼道歉等请求匹配", "evidence": "修复方案、损失评估"},
+      {"id": "ev_announce", "group": "证据要点", "label": "公告程序", "desc": "检察院提起前依法公告等程序", "evidence": "公告及反馈"},
+      {"id": "proc_expert", "group": "程序审查", "label": "鉴定评估", "desc": "损害鉴定、生态环境修复费用评估合法", "evidence": "鉴定意见、评估报告"}
+    ]
+  }
+}
